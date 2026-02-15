@@ -76,7 +76,7 @@ void loop(){
   if (Serial.available()) {
     Serial2.println(Serial.readStringUntil('\n'));
   }
-  if (Serial2.available()) {
+  if (Serial2.available()>2) {
     // Serial.println(Serial1.readStringUntil('\n'));
     //inputString = Serial1.readStringUntil('\n').c_str();
     //inputString = ;
@@ -116,7 +116,12 @@ void loop(){
     case 'z': // Servo state return
       Serial.println("Servo return position");
       break; 
+    default:
+      Serial.println("Doing Nothing");
+      break;
+      //Turn everything off
   }
+  //Set motor numbers up 
   // if(Serial1.available()>2){
   //   if(Serial1.read()==255){
   //     receivedLEDValue = Serial1.read();
