@@ -1,8 +1,9 @@
 #include <PWMServo.h>
+#include <DualTB9051FTGMotorShieldMod3230.h>
 
 //Libarries
 PWMServo Servo;
-
+DualTB9051FTGMotorShield md;
 // Variable Intialization
 unsigned long time = 0;
 unsigned long time_old = 0;
@@ -58,7 +59,26 @@ int HallEffect = A3;
 int DistanceSensor = A4;
 //_________________ Logic Variables + other
 char inputChar = 'm';
+int LeftMotorVal = 0;
+int RightMotorVal = 0;
+int servoAngle =  0;
+int conveyorVal = 0;
+
 //End Pin table
+//Stop if motor drivers are faulty (I think)
+void stopIfFault()
+{
+  if (md.getM1Fault())
+  {
+    Serial.println("M1 fault");
+    while (1);
+  }
+  if (md.getM2Fault())
+  {
+    Serial.println("M2 fault");
+    while (1);
+  }
+}
 void setup(){
   // Open serial communications with computer and wait for port to open:
   Serial.begin(57600); // make sure to also select this baud rate in your Serial Monitor window
@@ -68,11 +88,13 @@ void setup(){
   Serial2.begin(115200);  // this needs to match the mySerial baud rate in UnoSending
   // for wireless comms, it also needs to match the Xbee firmware setting of 115200
   // Send a message to the other Arduino board
+  md.init();
   Serial2.print("Hello other Arduino!");
   //pinMode(LEDpin,OUTPUT);
   //Servo.attach(ServoPin);
 }
 void loop(){
+  md.enableDrivers();;
   if (Serial.available()) {
     Serial2.println(Serial.readStringUntil('\n'));
   }
@@ -85,50 +107,80 @@ void loop(){
   switch (inputChar) {
     case 'f': // forward drive motors
       Serial.println("Forward");
+      LeftMotorVal = 120;
+      RightMotorVal = 120;
       break;
     case 'b' : //backward drive motors
       Serial.println("Backward");
+      LeftMotorVal = -120;
+      RightMotorVal = -120;
       break;
     case 'l': // drive left
       Serial.println("Left");
+      LeftMotorVal = -120;
+      RightMotorVal = 120;
       break;
     case 'r' : //drive right
       Serial.println("Right");
+      LeftMotorVal = 120;
+      RightMotorVal = -120;
       break;
     case 'u': // conveyer "forward"
       Serial.println("Conveyer Forward");
+      conveyorVal = 120;
       break;
     case 'd' : // conveyer "Backward"
       Serial.println("Conveyer Backward");
+      conveyorVal = -120;
       break; 
     case 's': // stop drives
       Serial.println("Stopping Drive Motors");
+      LeftMotorVal = 0;
+      RightMotorVal = 0;
       break;
     case 'x': // stop all
       Serial.println("Stopping everything");
+      LeftMotorVal = 0;
+      RightMotorVal = 0;
+      conveyorVal = 0;
+      servoAngle = 0;
       break; 
     case 'a' : // stop conveyer
       Serial.println("Stopping conveyer");
+      conveyorVal = 0;
       break;
     case 'p': // Servo state push
       Serial.println("Servo push button");
+      //servoAngle = ;//Fill in
       break; 
     case 'z': // Servo state return
       Serial.println("Servo return position");
+      //servoAngle = ;//Fill in
       break; 
     default:
       Serial.println("Doing Nothing");
+      LeftMotorVal = 0;
+      RightMotorVal = 0;
+      conveyorVal = 0;
+      servoAngle = 0;
       break;
       //Turn everything off
   }
-  //Set motor numbers up 
-  // if(Serial1.available()>2){
-  //   if(Serial1.read()==255){
-  //     receivedLEDValue = Serial1.read();
-  //     receivedServoAngle = Serial1.read();
-  //   }
-  // }
-  //digitalWrite(LEDpin,receivedLEDValue);
-  //Serial.println(receivedServoAngle);
-  //Servo.write(receivedServoAngle);
+  //Set motors to numbers set during switch case 
+  Servo.write(servoAngle);
+  md.setM1Speed(Motor1Val);
+  stopIfFault();
+  md.setM1Speed(Motor2Val);
+  stopIfFault();
+  //Same for conveyor motor
+  
 }
+  //Potentially recommended pseudocode
+  /*If Serial.available() Delay(20)
+    If Serial.available() == numOfDesiredInputChars + 1
+      xbeeSerial.write(Serial.read())
+      Do this numOfDesiredInputChars times
+      Serial.read()
+    Else
+      Print(“Wrong number of inputs, please input your command again”)
+      While Serial.available() Serial.read()*/
