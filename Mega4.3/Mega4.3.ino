@@ -56,10 +56,10 @@ int Color6 = 37;
 int HallEffect = A3;
 //_________________ Distance Sensor
 int DistanceSensor = A4;
-
+//_________________ Logic Variables + other
+char inputString = '';
 //End Pin table
-void setup()  
-{
+void setup(){
   // Open serial communications with computer and wait for port to open:
   Serial.begin(57600); // make sure to also select this baud rate in your Serial Monitor window
   // Print a message to the computer through the USB
@@ -73,18 +73,53 @@ void setup()
   //Servo.attach(ServoPin);
 }
 void loop(){
-  // if (Serial.available()) {
-  //   Serial1.println(Serial.readStringUntil('\n'));
-  // }
-  // if (Serial1.available()) {
-  //   Serial.println(Serial1.readStringUntil('\n'));
-  // }
-  if(Serial1.available()>2){
-    if(Serial1.read()==255){
-      receivedLEDValue = Serial1.read();
-      receivedServoAngle = Serial1.read();
-    }
+  if (Serial.available()) {
+    Serial1.println(Serial.readStringUntil('\n'));
   }
+  if (Serial1.available()) {
+    // Serial.println(Serial1.readStringUntil('\n'));
+    inputString = Serial1.readStringUntil('\n');
+    switch (inputString) {
+      case 'f': // forward drive motors
+        Serial.println("Forward");
+        break;
+      case 'b' : //backward drive motors
+        Serial.println("Backward");
+        break;
+      case 'l': // drive left
+        Serial.println("Left");
+        break;
+      case 'r' : //drive right
+        Serial.println("Right");
+        break;
+      case 'u': // conveyer "forward"
+        Serial.println("Conveyer Forward");
+        break;
+      case 'd' : // conveyer "Backward"
+        Serial.println("Conveyer Backward");
+        break; 
+      case 's': // stop drives
+        Serial.println("Stopping Drive Motors");
+        break;
+      case 'x': // stop all
+        Serial.println("Stopping everything");
+        break; 
+      case 'a' : // stop conveyer
+        Serial.println("Stopping conveyer");
+        break;
+      case 'p': // Servo state push
+        Serial.println("Servo push button");
+        break; 
+      case 'z': // Servo state return
+        Serial.println("Servo return position");
+        break; 
+  }
+  // if(Serial1.available()>2){
+  //   if(Serial1.read()==255){
+  //     receivedLEDValue = Serial1.read();
+  //     receivedServoAngle = Serial1.read();
+  //   }
+  // }
   //digitalWrite(LEDpin,receivedLEDValue);
   //Serial.println(receivedServoAngle);
   //Servo.write(receivedServoAngle);
