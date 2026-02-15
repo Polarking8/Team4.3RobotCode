@@ -57,7 +57,7 @@ int HallEffect = A3;
 //_________________ Distance Sensor
 int DistanceSensor = A4;
 //_________________ Logic Variables + other
-char inputString = '';
+char inputChar = 'm';
 //End Pin table
 void setup(){
   // Open serial communications with computer and wait for port to open:
@@ -78,8 +78,11 @@ void loop(){
   }
   if (Serial1.available()) {
     // Serial.println(Serial1.readStringUntil('\n'));
-    inputString = Serial1.readStringUntil('\n');
-    switch (inputString) {
+    //inputString = Serial1.readStringUntil('\n').c_str();
+    //inputString = ;
+    inputChar = Serial1.read();
+    }
+    switch (inputChar) {
       case 'f': // forward drive motors
         Serial.println("Forward");
         break;
