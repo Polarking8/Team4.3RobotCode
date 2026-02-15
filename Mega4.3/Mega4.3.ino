@@ -65,57 +65,57 @@ void setup(){
   // Print a message to the computer through the USB
   Serial.println("Hello Computer!");
   // Open serial communications with the other Arduino board
-  Serial1.begin(115200);  // this needs to match the mySerial baud rate in UnoSending
+  Serial2.begin(115200);  // this needs to match the mySerial baud rate in UnoSending
   // for wireless comms, it also needs to match the Xbee firmware setting of 115200
   // Send a message to the other Arduino board
-  Serial1.print("Hello other Arduino!");
+  Serial2.print("Hello other Arduino!");
   //pinMode(LEDpin,OUTPUT);
   //Servo.attach(ServoPin);
 }
 void loop(){
   if (Serial.available()) {
-    Serial1.println(Serial.readStringUntil('\n'));
+    Serial2.println(Serial.readStringUntil('\n'));
   }
-  if (Serial1.available()) {
+  if (Serial2.available()) {
     // Serial.println(Serial1.readStringUntil('\n'));
     //inputString = Serial1.readStringUntil('\n').c_str();
     //inputString = ;
-    inputChar = Serial1.read();
+    inputChar = Serial2.read();
     }
-    switch (inputChar) {
-      case 'f': // forward drive motors
-        Serial.println("Forward");
-        break;
-      case 'b' : //backward drive motors
-        Serial.println("Backward");
-        break;
-      case 'l': // drive left
-        Serial.println("Left");
-        break;
-      case 'r' : //drive right
-        Serial.println("Right");
-        break;
-      case 'u': // conveyer "forward"
-        Serial.println("Conveyer Forward");
-        break;
-      case 'd' : // conveyer "Backward"
-        Serial.println("Conveyer Backward");
-        break; 
-      case 's': // stop drives
-        Serial.println("Stopping Drive Motors");
-        break;
-      case 'x': // stop all
-        Serial.println("Stopping everything");
-        break; 
-      case 'a' : // stop conveyer
-        Serial.println("Stopping conveyer");
-        break;
-      case 'p': // Servo state push
-        Serial.println("Servo push button");
-        break; 
-      case 'z': // Servo state return
-        Serial.println("Servo return position");
-        break; 
+  switch (inputChar) {
+    case 'f': // forward drive motors
+      Serial.println("Forward");
+      break;
+    case 'b' : //backward drive motors
+      Serial.println("Backward");
+      break;
+    case 'l': // drive left
+      Serial.println("Left");
+      break;
+    case 'r' : //drive right
+      Serial.println("Right");
+      break;
+    case 'u': // conveyer "forward"
+      Serial.println("Conveyer Forward");
+      break;
+    case 'd' : // conveyer "Backward"
+      Serial.println("Conveyer Backward");
+      break; 
+    case 's': // stop drives
+      Serial.println("Stopping Drive Motors");
+      break;
+    case 'x': // stop all
+      Serial.println("Stopping everything");
+      break; 
+    case 'a' : // stop conveyer
+      Serial.println("Stopping conveyer");
+      break;
+    case 'p': // Servo state push
+      Serial.println("Servo push button");
+      break; 
+    case 'z': // Servo state return
+      Serial.println("Servo return position");
+      break; 
   }
   // if(Serial1.available()>2){
   //   if(Serial1.read()==255){
