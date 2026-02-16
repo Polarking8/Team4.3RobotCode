@@ -1,6 +1,9 @@
+#include <L298N.h>
+//Backup plan
 #include <PWMServo.h>
 #include <DualTB9051FTGMotorShieldMod3230.h>
-
+//Unsure if this one works
+#include "L298NMotorDriverMega.h"
 //Libarries
 PWMServo Servo;
 DualTB9051FTGMotorShield md;
@@ -79,6 +82,8 @@ void stopIfFault()
     while (1);
   }
 }
+L298NMotorDriverMega Conveyormotor(55,M1PWMsolo,M2PWMsolo); // This pin is intentionally not a real pin
+L298N Conveyormotor2(55,M1PWMsolo,M2PWMsolo);// This pin is intentionally not a real pin (This code is duplicate to make sure things work)
 void setup(){
   // Open serial communications with computer and wait for port to open:
   Serial.begin(57600); // make sure to also select this baud rate in your Serial Monitor window
@@ -92,9 +97,10 @@ void setup(){
   Serial2.print("Hello other Arduino!");
   //pinMode(LEDpin,OUTPUT);
   //Servo.attach(ServoPin);
+  Conveyormotor.setSpeed(70);
 }
 void loop(){
-  md.enableDrivers();;
+  md.enableDrivers();
   if (Serial.available()) {
     Serial2.println(Serial.readStringUntil('\n'));
   }
@@ -172,6 +178,25 @@ void loop(){
   stopIfFault();
   md.setM1Speed(Motor2Val);
   stopIfFault();
+  if(conveyerVal>0){
+    Conveyormotor2.setSpeed(conveyerVal);//Use one or the other
+    Conveyormotor2.forward();
+    //demarcating the difference between libs
+    Conveyormotor.setM1Speed(conveyerVal);
+    Conveyormotor.setM2Speed(conveyerVal);
+  } else if(conveyer <0){
+    Conveyormotor2.setSpeed(|conveyerVal|);//Use one or the other
+    Conveyormotor2.backward();
+    //demarcating the difference between libs
+    Conveyormotor.setM1Speed(|conveyerVal|);
+    Conveyormotor.setM2Speed(|conveyerVal|);
+  }else if(conveyer == 0){
+    Conveyormotor2.setSpeed(0)//Use one or the other
+    Conveyormotor2.stop();
+    //demarcating the difference between libs
+    Conveyormotor.setM1Speed(0);
+    Conveyormotor.setM2Speed(0);
+  }
   //Same for conveyor motor
   
 }
