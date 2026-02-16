@@ -61,7 +61,7 @@ int HallEffect = A3;
 //_________________ Distance Sensor
 int DistanceSensor = A4;
 //_________________ Logic Variables + other
-char inputChar = 'm';
+char inputChar = 'm'; //m not used
 int LeftMotorVal = 0;
 int RightMotorVal = 0;
 int servoAngle =  0;
@@ -94,13 +94,14 @@ void setup(){
   // for wireless comms, it also needs to match the Xbee firmware setting of 115200
   // Send a message to the other Arduino board
   md.init();
+  md.enableDrivers();
   Serial2.print("Hello other Arduino!");
   //pinMode(LEDpin,OUTPUT);
   Servo.attach(ButtonServoPWM);
   Conveyormotor.setSpeed(70);
 }
 void loop(){
-  md.enableDrivers();
+  
   if (Serial.available()) {
     Serial2.println(Serial.readStringUntil('\n'));
   }
@@ -133,11 +134,11 @@ void loop(){
       break;
     case 'u': // conveyer "forward"
       Serial.println("Conveyer Forward");
-      conveyorVal = 120;
+      e = 120;
       break;
     case 'd' : // conveyer "Backward"
       Serial.println("Conveyer Backward");
-      conveyorVal = -120;
+      e = -120;
       break; 
     case 's': // stop drives
       Serial.println("Stopping Drive Motors");
@@ -148,12 +149,12 @@ void loop(){
       Serial.println("Stopping everything");
       LeftMotorVal = 0;
       RightMotorVal = 0;
-      conveyorVal = 0;
+      e = 0;
       servoAngle = 0;
       break; 
     case 'a' : // stop conveyer
       Serial.println("Stopping conveyer");
-      conveyorVal = 0;
+      e = 0;
       break;
     case 'p': // Servo state push
       Serial.println("Servo push button");
@@ -167,7 +168,7 @@ void loop(){
       Serial.println("Doing Nothing");
       LeftMotorVal = 0;
       RightMotorVal = 0;
-      conveyorVal = 0;
+      e = 0;
       servoAngle = 0;
       break;
       //Turn everything off
@@ -178,19 +179,19 @@ void loop(){
   stopIfFault();
   md.setM1Speed(Motor2Val);
   stopIfFault();
-  if(conveyerVal>0){
-    Conveyormotor2.setSpeed(conveyerVal);//Use one or the other
+  if(conveyorVal>0){
+    Conveyormotor2.setSpeed(conveyorVal);//Use one or the other
     Conveyormotor2.forward();
     //demarcating the difference between libs
-    Conveyormotor.setM1Speed(conveyerVal);
-    Conveyormotor.setM2Speed(conveyerVal);
-  } else if(conveyer <0){
-    Conveyormotor2.setSpeed(|conveyerVal|);//Use one or the other
+    Conveyormotor.setM1Speed(conveyorVal);
+    Conveyormotor.setM2Speed(conveyorVal);
+  } else if(conveyorVal <0){
+    Conveyormotor2.setSpeed(|conveyorVal|);//Use one or the other
     Conveyormotor2.backward();
     //demarcating the difference between libs
-    Conveyormotor.setM1Speed(|conveyerVal|);
-    Conveyormotor.setM2Speed(|conveyerVal|);
-  }else if(conveyer == 0){
+    Conveyormotor.setM1Speed(|conveyorVal|);
+    Conveyormotor.setM2Speed(|conveyorVal|);
+  }else if(conveyorVal == 0){
     Conveyormotor2.setSpeed(0)//Use one or the other
     Conveyormotor2.stop();
     //demarcating the difference between libs
