@@ -179,9 +179,9 @@ void loop(){
   }
   //Set motors to numbers set during switch case 
   Servo.write(servoAngle);
-  md.setM1Speed(LeftMotorVal);
+  md.setM2Speed(LeftMotorVal);
   stopIfFault();
-  md.setM2Speed(RightMotorVal);
+  md.setM1Speed(RightMotorVal);
   stopIfFault();
   if(conveyorVal>0){
     analogWrite(M1PWMsolo,map(conveyorVal,0,400,0,255));//M1 is forward, M2 is backward
