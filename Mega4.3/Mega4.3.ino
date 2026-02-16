@@ -42,7 +42,7 @@ int ButtonServoPWM = 11;
 int M1DIAGsolo = 22;
 int M1PWMsolo = 44;
 int M2PWMsolo = 45;
-int M1OCMsolo = A1;
+int M1OCMsolo = A2;
 //_________________ Reflectance Array
 int Reflect1 = 25;
 int Reflect2 = 26;
@@ -100,8 +100,8 @@ void setup(){
   Serial2.print("Hello other Arduino!");
   Servo.attach(ButtonServoPWM);
   //This pinmode makes the conveyer work, we are manually going to analogWrite()
-  pinMode(M1PWMsolo);
-  pinMode(M2PWMsolo);
+  pinMode(M1PWMsolo,OUTPUT);
+  pinMode(M2PWMsolo,OUTPUT);
   // Conveyormotor.setSpeeds(70,70);
 }
 void loop(){
@@ -138,11 +138,11 @@ void loop(){
       break;
     case 'u': // conveyer "forward"
       Serial.println("Conveyer Forward");
-      conveyorVal = 120;
+      conveyorVal = 400;
       break;
     case 'd' : // conveyer "Backward"
       Serial.println("Conveyer Backward");
-      conveyorVal = -120;
+      conveyorVal = -400;
       break; 
     case 's': // stop drives
       Serial.println("Stopping Drive Motors");
@@ -162,11 +162,11 @@ void loop(){
       break;
     case 'p': // Servo state push
       Serial.println("Servo push button");
-      servoAngle = 30;//Fill in
+      servoAngle = 52;
       break; 
     case 'z': // Servo state return
       Serial.println("Servo return position");
-      servoAngle = 0;//Fill in
+      servoAngle = 0;
       break; 
     default:
       Serial.println("Doing Nothing");
@@ -185,13 +185,13 @@ void loop(){
   stopIfFault();
   if(conveyorVal>0){
     analogWrite(M1PWMsolo,map(conveyorVal,0,400,0,255));//M1 is forward, M2 is backward
-    analogWrite(M2PWMsolo,0));
+    analogWrite(M2PWMsolo,0);
   } else if(conveyorVal <0){
     analogWrite(M2PWMsolo,map(abs(conveyorVal),0,400,0,255));//M1 is forward, M2 is backward
-    analogWrite(M1PWMsolo,0));
+    analogWrite(M1PWMsolo,0);
   }else if(conveyorVal == 0){
-    analogWrite(M2PWMsolo,0));
-    analogWrite(M1PWMsolo,0));
+    analogWrite(M2PWMsolo,0);
+    analogWrite(M1PWMsolo,0);
     //Set both to 0
   }
 }
