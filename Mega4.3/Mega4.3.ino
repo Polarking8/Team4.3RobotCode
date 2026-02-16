@@ -1,12 +1,14 @@
+#include <L298NMotorDriverMega.h>
+
 #include <L298N.h>
 //Backup plan
 #include <PWMServo.h>
 #include <DualTB9051FTGMotorShieldMod3230.h>
 //Unsure if this one works
-#include "L298NMotorDriverMega.h"
+//#include "L298NMotorDriverMega.h"
 //Libarries
 PWMServo Servo;
-DualTB9051FTGMotorShield md;
+DualTB9051FTGMotorShieldMod3230 md;
 // Variable Intialization
 unsigned long time = 0;
 unsigned long time_old = 0;
@@ -82,8 +84,8 @@ void stopIfFault()
     while (1);
   }
 }
-L298NMotorDriverMega Conveyormotor(55,M1PWMsolo,M2PWMsolo); // This pin is intentionally not a real pin
-L298N Conveyormotor2(55,M1PWMsolo,M2PWMsolo);// This pin is intentionally not a real pin (This code is duplicate to make sure things work)
+// L298NMotorDriverMega Conveyormotor(60,M1PWMsolo,M2PWMsolo,60,60,60);
+// L298N Conveyormotor2(55,M1PWMsolo,M2PWMsolo);// This pin is intentionally not a real pin (This code is duplicate to make sure things work)
 void setup(){
   // Open serial communications with computer and wait for port to open:
   Serial.begin(57600); // make sure to also select this baud rate in your Serial Monitor window
@@ -96,9 +98,11 @@ void setup(){
   md.init();
   md.enableDrivers();
   Serial2.print("Hello other Arduino!");
-  //pinMode(LEDpin,OUTPUT);
   Servo.attach(ButtonServoPWM);
-  Conveyormotor.setSpeed(70);
+  //This pinmode makes the conveyer work, we are manually going to analogWrite()
+  pinMode(M1PWMsolo);
+  pinMode(M2PWMsolo);
+  // Conveyormotor.setSpeeds(70,70);
 }
 void loop(){
   
@@ -134,11 +138,11 @@ void loop(){
       break;
     case 'u': // conveyer "forward"
       Serial.println("Conveyer Forward");
-      e = 120;
+      conveyorVal = 120;
       break;
     case 'd' : // conveyer "Backward"
       Serial.println("Conveyer Backward");
-      e = -120;
+      conveyorVal = -120;
       break; 
     case 's': // stop drives
       Serial.println("Stopping Drive Motors");
@@ -149,57 +153,47 @@ void loop(){
       Serial.println("Stopping everything");
       LeftMotorVal = 0;
       RightMotorVal = 0;
-      e = 0;
+      conveyorVal = 0;
       servoAngle = 0;
       break; 
     case 'a' : // stop conveyer
       Serial.println("Stopping conveyer");
-      e = 0;
+      conveyorVal = 0;
       break;
     case 'p': // Servo state push
       Serial.println("Servo push button");
-      //servoAngle = ;//Fill in
+      servoAngle = 30;//Fill in
       break; 
     case 'z': // Servo state return
       Serial.println("Servo return position");
-      //servoAngle = ;//Fill in
+      servoAngle = 0;//Fill in
       break; 
     default:
       Serial.println("Doing Nothing");
       LeftMotorVal = 0;
       RightMotorVal = 0;
-      e = 0;
+      conveyorVal = 0;
       servoAngle = 0;
       break;
       //Turn everything off
   }
   //Set motors to numbers set during switch case 
   Servo.write(servoAngle);
-  md.setM1Speed(Motor1Val);
+  md.setM1Speed(LeftMotorVal);
   stopIfFault();
-  md.setM1Speed(Motor2Val);
+  md.setM2Speed(RightMotorVal);
   stopIfFault();
   if(conveyorVal>0){
-    Conveyormotor2.setSpeed(conveyorVal);//Use one or the other
-    Conveyormotor2.forward();
-    //demarcating the difference between libs
-    Conveyormotor.setM1Speed(conveyorVal);
-    Conveyormotor.setM2Speed(conveyorVal);
+    analogWrite(M1PWMsolo,map(conveyorVal,0,400,0,255));//M1 is forward, M2 is backward
+    analogWrite(M2PWMsolo,0));
   } else if(conveyorVal <0){
-    Conveyormotor2.setSpeed(|conveyorVal|);//Use one or the other
-    Conveyormotor2.backward();
-    //demarcating the difference between libs
-    Conveyormotor.setM1Speed(|conveyorVal|);
-    Conveyormotor.setM2Speed(|conveyorVal|);
+    analogWrite(M2PWMsolo,map(abs(conveyorVal),0,400,0,255));//M1 is forward, M2 is backward
+    analogWrite(M1PWMsolo,0));
   }else if(conveyorVal == 0){
-    Conveyormotor2.setSpeed(0)//Use one or the other
-    Conveyormotor2.stop();
-    //demarcating the difference between libs
-    Conveyormotor.setM1Speed(0);
-    Conveyormotor.setM2Speed(0);
+    analogWrite(M2PWMsolo,0));
+    analogWrite(M1PWMsolo,0));
+    //Set both to 0
   }
-  //Same for conveyor motor
-  
 }
   //Potentially recommended pseudocode
   /*If Serial.available() Delay(20)
