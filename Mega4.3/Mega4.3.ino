@@ -35,7 +35,7 @@ int M2OCMDual = A1;
 int XBeeTX = 16;
 int XBeeRX = 17; 
 //_________________ Pusher servo pin
-int ButtonServoPWM0 = 11;
+int ButtonServoPWM = 11;
 //_________________ Solo Motor Driver Shield
 int M1DIAGsolo = 22;
 int M1PWMsolo = 44;
@@ -96,7 +96,7 @@ void setup(){
   md.init();
   Serial2.print("Hello other Arduino!");
   //pinMode(LEDpin,OUTPUT);
-  //Servo.attach(ServoPin);
+  Servo.attach(ButtonServoPWM);
   Conveyormotor.setSpeed(70);
 }
 void loop(){
