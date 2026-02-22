@@ -1,19 +1,18 @@
-#include <L298NMotorDriverMega.h>
-
-#include <L298N.h>
+#include <QTRSensors.h>
+// #include <L298NMotorDriverMega.h>
+// #include <L298N.h>
 //Backup plan
 #include <PWMServo.h>
 #include <DualTB9051FTGMotorShieldMod3230.h>
 //Unsure if this one works
 //#include "L298NMotorDriverMega.h"
 //Libarries
-PWMServo Servo;
-DualTB9051FTGMotorShieldMod3230 md;
+PWMServo Servo; // Create servo object
+QTRSensors qtr; // create a reflectance sensor object
+DualTB9051FTGMotorShieldMod3230 md; // Create motor driver object
 // Variable Intialization
 unsigned long time = 0;
 unsigned long time_old = 0;
-// int receivedLEDValue = 0;
-// int receivedServoAngle  = 0;
 //Pin table
 //________________ Serial comms
 int USBRXCable = 0;
@@ -51,25 +50,42 @@ int Reflect4 = 28;
 int Reflect5 = 29;
 int Reflect6 = 30;
 int Reflect7 = 31;
+int Reflect8 = 32;
 //_________________ Color Sensor
-int Color1 = 32;
-int Color2 = 33;
-int Color3 = 34;
-int Color4 = 35;
-int Color5 = 36;
-int Color6 = 37;
+int Color1 = 33;
+int Color2 = 34;
+int Color3 = 35;
+int Color4 = 36;
+int Color5 = 37;
+int Color6 = 38;
 //_________________ Hall Effect 
 int HallEffect = A3;
 //_________________ Distance Sensor
 int DistanceSensor = A4;
+//End Pin table
 //_________________ Logic Variables + other
 char inputChar = 'm'; //m not used
 int LeftMotorVal = 0;
 int RightMotorVal = 0;
 int servoAngle =  0;
 int conveyorVal = 0;
+int distVal = 0;
+// Reflectance Sensor Variable initialization
+const uint8_t SensorCount = 8;  // # of sensors in reflectance array
+uint16_t sensorValues[SensorCount];  //reflectance sensor readings
+//uint16_t sensor_bias[SensorCount] = {280,184,232,228,232,228,180,280};
+//double di[SensorCount] = {0, 0.8, 1.6, 2.4, 3.2, 4.0,4.8, 5.6};
+uint16_t Sensor_value_unbiased[SensorCount];
+double d = 0;
+double dZero = 2.8;
+double Ai = 0;
+double Aid = 0;
+double error= 0;
+double t, t0, print_time=0; // declare some time variables
+double Kp=350; //Proportional Gain for Line Following
+double base_speed=400; //Nominal speed of robot
 
-//End Pin table
+
 //Stop if motor drivers are faulty (I think)
 void stopIfFault()
 {
@@ -102,7 +118,10 @@ void setup(){
   //This pinmode makes the conveyer work, we are manually going to analogWrite()
   pinMode(M1PWMsolo,OUTPUT);
   pinMode(M2PWMsolo,OUTPUT);
-  // Conveyormotor.setSpeeds(70,70);
+  //Init reflectance sensor
+  qtr.setTypeRC();
+  qtr.setSensorPins((const uint8_t[]){25,26,27,28,29,30,31,32},SensorCount);
+  t0 = micros()/1000000.; // initialize time
 }
 void loop(){
   
@@ -115,11 +134,12 @@ void loop(){
     //inputString = ;
     inputChar = Serial2.read();
     }
+  t = micros()/1000000.-t0;
   switch (inputChar) {
     case 'f': // forward drive motors
       Serial.println("Forward");
-      LeftMotorVal = 120;
-      RightMotorVal = 120;
+      LeftMotorVal = 400;
+      RightMotorVal = 400;
       break;
     case 'b' : //backward drive motors
       Serial.println("Backward");
@@ -144,10 +164,9 @@ void loop(){
       Serial.println("Conveyer Backward");
       conveyorVal = -400;
       break; 
-    case 's': // stop drives
-      Serial.println("Stopping Drive Motors");
-      LeftMotorVal = 0;
-      RightMotorVal = 0;
+    case 's': // Read distance sensor val
+      distVal = analogRead(DistanceSensor);
+      Serial.println(distVal);
       break;
     case 'x': // stop all
       Serial.println("Stopping everything");
@@ -156,9 +175,21 @@ void loop(){
       conveyorVal = 0;
       servoAngle = 0;
       break; 
-    case 'a' : // stop conveyer
-      Serial.println("Stopping conveyer");
-      conveyorVal = 0;
+    case 'a' ://read reflectance vals
+      qtr.read(sensorValues);
+      if ((t-print_time)>0.25) { 
+        for (uint8_t i=0; i < SensorCount; i++){
+          Serial.print(sensor_Values[i]);
+          Serial.print('\t');
+          // Serial.print(Sensor_value_unbiased[i]);
+          // Serial.print('\t');
+        }
+      Serial.println(" ");
+      print_time=t;
+      }
+      break;
+    case 'k': //Line following
+
       break;
     case 'p': // Servo state push
       Serial.println("Servo push button");
