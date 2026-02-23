@@ -72,9 +72,9 @@ int conveyorVal = 0;
 int distVal = 0;
 // Reflectance Sensor Variable initialization
 const uint8_t SensorCount = 8;  // # of sensors in reflectance array
-uint16_t sensorValues[SensorCount];  //reflectance sensor readings
-//uint16_t sensor_bias[SensorCount] = {280,184,232,228,232,228,180,280};
-//double di[SensorCount] = {0, 0.8, 1.6, 2.4, 3.2, 4.0,4.8, 5.6};
+uint16_t sensor_Values[SensorCount];  //reflectance sensor readings
+uint16_t sensor_bias[SensorCount] = {280,184,232,228,232,228,180,280};
+double di[SensorCount] = {0, 0.8, 1.6, 2.4, 3.2, 4.0,4.8, 5.6};
 uint16_t Sensor_value_unbiased[SensorCount];
 double d = 0;
 double dZero = 2.8;
@@ -166,7 +166,10 @@ void loop(){
       break; 
     case 's': // Read distance sensor val
       distVal = analogRead(DistanceSensor);
-      Serial.println(distVal);
+      if ((t-print_time)>0.25) { 
+        Serial.println(distVal);
+        print_time=t;
+      }
       break;
     case 'x': // stop all
       Serial.println("Stopping everything");
@@ -176,7 +179,7 @@ void loop(){
       servoAngle = 0;
       break; 
     case 'a' ://read reflectance vals
-      qtr.read(sensorValues);
+      qtr.read(sensor_Values);
       if ((t-print_time)>0.25) { 
         for (uint8_t i=0; i < SensorCount; i++){
           Serial.print(sensor_Values[i]);
@@ -189,7 +192,31 @@ void loop(){
       }
       break;
     case 'k': //Line following
-
+      for (uint8_t i = 0; i < SensorCount; i++){
+        Sensor_value_unbiased[i] = sensor_Values[i] - sensor_bias[i];
+        if(Sensor_value_unbiased[i]>5000){
+          Sensor_value_unbiased[i] = 0;
+        }
+      }
+      Ai = 0;
+      Aid = 0;
+      for(uint8_t i = 0; i < SensorCount; i++){
+        Aid = Aid + Sensor_value_unbiased[i] * di[i];
+        Ai = Ai+ Sensor_value_unbiased[i];
+      }
+      d = Aid/Ai;
+      error = dZero-double(d);
+      RightMotorVal = base_speed - Kp*error;
+      LeftMotorVal = base_speed + Kp*error;
+      break;
+    case 'w': // stop 4cm from the wall
+      distVal = analogRead(DistanceSensor);
+      LeftMotorVal = 120;
+      RightMotorVal = 120;
+      if(distVal<60){ // change this val to be able to stop, depending on the sensor calibration
+        LeftMotorVal = 0;
+        RightMotorVal = 0;
+      }
       break;
     case 'p': // Servo state push
       Serial.println("Servo push button");
