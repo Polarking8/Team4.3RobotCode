@@ -73,8 +73,8 @@ int distVal = 0;
 // Reflectance Sensor Variable initialization
 const uint8_t SensorCount = 8;  // # of sensors in reflectance array
 uint16_t sensor_Values[SensorCount];  //reflectance sensor readings
-uint16_t sensor_bias[SensorCount] = {280,184,232,228,232,228,180,280};
-double di[SensorCount] = {0, 0.8, 1.6, 2.4, 3.2, 4.0,4.8, 5.6};
+uint16_t sensor_bias[SensorCount] = {140,140,140,140,140,92,92,140};
+double di[SensorCount] = {0, 0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 5.6};
 uint16_t Sensor_value_unbiased[SensorCount];
 double d = 0;
 double dZero = 2.8;
@@ -82,8 +82,8 @@ double Ai = 0;
 double Aid = 0;
 double error= 0;
 double t, t0, print_time=0; // declare some time variables
-double Kp=350; //Proportional Gain for Line Following
-double base_speed=400; //Nominal speed of robot
+double Kp=25; //Proportional Gain for Line Following
+double base_speed=50; //Nominal speed of robot
 
 
 //Stop if motor drivers are faulty (I think)
@@ -113,7 +113,7 @@ void setup(){
   // Send a message to the other Arduino board
   md.init();
   md.enableDrivers();
-  Serial2.print("Hello other Arduino!");
+  Serial2.print("Hello Uno Arduino!");
   Servo.attach(ButtonServoPWM);
   //This pinmode makes the conveyer work, we are manually going to analogWrite()
   pinMode(M1PWMsolo,OUTPUT);
@@ -167,6 +167,7 @@ void loop(){
     case 's': // Read distance sensor val
       distVal = analogRead(DistanceSensor);
       if ((t-print_time)>0.25) { 
+        Serial2.println(distVal);
         Serial.println(distVal);
         print_time=t;
       }
@@ -186,34 +187,46 @@ void loop(){
           Serial.print('\t');
           // Serial.print(Sensor_value_unbiased[i]);
           // Serial.print('\t');
+          Serial2.print(sensor_Values[i]);
+          Serial2.print('\t');
         }
-      Serial.println(" ");
+      Serial2.println(" ");
+      Serial.println("");
       print_time=t;
       }
       break;
     case 'k': //Line following
-      for (uint8_t i = 0; i < SensorCount; i++){
+      qtr.read(sensor_Values);
+      for (int i = 0; i < SensorCount; i++){
         Sensor_value_unbiased[i] = sensor_Values[i] - sensor_bias[i];
         if(Sensor_value_unbiased[i]>5000){
           Sensor_value_unbiased[i] = 0;
         }
+        Serial2.print(Sensor_value_unbiased[i]);
+        Serial2.print('\t');
       }
       Ai = 0;
       Aid = 0;
-      for(uint8_t i = 0; i < SensorCount; i++){
+      for(int i = 0; i < SensorCount; i++){
         Aid = Aid + Sensor_value_unbiased[i] * di[i];
         Ai = Ai+ Sensor_value_unbiased[i];
       }
       d = Aid/Ai;
+      Serial2.print(Aid);
+      Serial2.print('\t');
+      Serial2.print(Ai);
+      Serial2.print('\t');
       error = dZero-double(d);
-      RightMotorVal = base_speed - Kp*error;
-      LeftMotorVal = base_speed + Kp*error;
+      // Serial2.print("  Error: ");
+      Serial2.println(d);
+      RightMotorVal = base_speed + Kp*error;
+      LeftMotorVal = base_speed - Kp*error;
       break;
     case 'w': // stop 4cm from the wall
       distVal = analogRead(DistanceSensor);
       LeftMotorVal = 120;
       RightMotorVal = 120;
-      if(distVal<60){ // change this val to be able to stop, depending on the sensor calibration
+      if(distVal>200){ // change this val to be able to stop, depending on the sensor calibration
         LeftMotorVal = 0;
         RightMotorVal = 0;
       }

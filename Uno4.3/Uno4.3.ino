@@ -20,7 +20,7 @@ void setup()  {
   mySerial.begin(115200);  // this needs to match the Serial1 baud rate in MegaReceiving
   // for wireless comms, it also needs to match the Xbee firmware setting of 115200
   // Send a message to the other Arduino board
-  mySerial.print("Hello other Arduino!");
+  mySerial.print("Hello Mega Arduino!");
 }
 
 void loop(){
