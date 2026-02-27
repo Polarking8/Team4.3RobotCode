@@ -3,13 +3,13 @@
 // #include <L298N.h>
 //Backup plan
 #include <PWMServo.h>
-#include <DualTB9051FTGMotorShieldMod3230.h>
+#include <DualTB9051FTGMotorShield.h>
 //Unsure if this one works
 //#include "L298NMotorDriverMega.h"
 //Libarries
 PWMServo Servo; // Create servo object
 QTRSensors qtr; // create a reflectance sensor object
-DualTB9051FTGMotorShieldMod3230 md; // Create motor driver object
+DualTB9051FTGMotorShield md; // Create motor driver object
 // Variable Intialization
 unsigned long time = 0;
 unsigned long time_old = 0;
@@ -52,12 +52,12 @@ int Reflect6 = 30;
 int Reflect7 = 31;
 int Reflect8 = 32;
 //_________________ Color Sensor
-int Color1 = 33;
-int Color2 = 34;
-int Color3 = 35;
-int Color4 = 36;
-int Color5 = 37;
-int Color6 = 38;
+int s1 = 33;
+int s2 = 34;
+int s3 = 35;
+int s4 = 36;
+int s5 = 37;
+int s6 = 38;
 //_________________ Hall Effect 
 int HallEffect = A3;
 //_________________ Distance Sensor
@@ -126,15 +126,16 @@ void setup(){
   qtr.setSensorPins((const uint8_t[]){25,26,27,28,29,30,31,32},SensorCount);
   t0 = micros()/1000000.; // initialize time
   //Set up color sensor
-  pinMode(Color1,OUTPUT);
-  pinMode(Color2,OUTPUT);
-  pinMode(Color3,OUTPUT);
-  pinMode(Color4,OUTPUT);
-  pinMode(Color5,INPUT);
-  pinMode(Color6,OUTPUT);
-  digitalWrite(Color1, HIGH); // s1 and s0 choose frequency scaling
-  digitalWrite(Color2, LOW);
-  digitalWrite(Color6, HIGH); //turn on LED
+  pinMode(s1,OUTPUT);
+  pinMode(s2,OUTPUT);
+  pinMode(s3,OUTPUT);
+  pinMode(s4,OUTPUT);
+  pinMode(s5,INPUT);
+  pinMode(s6,OUTPUT);
+  // s1 and s0 choose frequency scaling
+  digitalWrite(s1, HIGH);
+  digitalWrite(s2, LOW);
+  digitalWrite(s6, HIGH); //turn on LED
 
 }
 void loop(){
@@ -254,8 +255,17 @@ void loop(){
       servoAngle = 0;
       break; 
     case 'n':// Read Hall Effect Sensor Vals
-      hallVal = analogRead(HallEffect);
-      Serial2.println(hallVal);
+      // TODO: CHANGE TO SERIAL2
+      if (t-print_time>0.25) {
+        hallVal = analogRead(HallEffect); // Centerpoint should be 460
+        if (hallVal < 400 || hallVal > 510) {
+          Serial.println("Silverfish detected");
+        } else {
+          Serial.println("No silverfish detected");
+        }
+        print_time = t;
+        //Serial2.println(hallVal);
+      }
       break;
     case 'm': // Read color sensor vals
       // Select RED Filter
@@ -264,6 +274,8 @@ void loop(){
       delay(10);
       for (int i = 0; i < numSamples; i++){
         R[i] = readPulse();
+        Serial.println("Red Read: ");
+        Serial.println(R[i]);
       }
 
       // Select BLUE Filter
@@ -272,6 +284,8 @@ void loop(){
       delay(10);
       for (int i = 0; i < numSamples; i++){
         B[i] = readPulse();
+        Serial.println("Blue Read: ");
+        Serial.println(B[i]);
       }
 
       // Select GREEN Filter
@@ -280,6 +294,8 @@ void loop(){
       delay(10);
       for (int i = 0; i < numSamples; i++){
         G[i] = readPulse();
+        Serial.println("Green Read: ");
+        Serial.println(G[i]);
       }
 
       // Select CLEAR Filter
@@ -288,19 +304,28 @@ void loop(){
       delay(10);
       for (int i = 0; i < numSamples; i++){
         C[i] = readPulse();
+        Serial.println("Clear Read: ");
+        Serial.println(C[i]);
       }
       RF = movingAverage(R);
+      Serial.println("Red Average Calculated");
       GF = movingAverage(G);
+      Serial.println("Green Average Calculated");
       BF = movingAverage(B);
+      Serial.println("Blue Average Calculated");
       CF = movingAverage(C);
+      Serial.println("Clear Average Calculated");
       //Print Vals
-      Serial2.print(RF, 2);
-      Serial2.print(",\t");
-      Serial2.print(GF, 2);
-      Serial2.print(",\t");
-      Serial2.print(BF, 2);
-      Serial2.print(",\t");
-      Serial2.println(CF, 2);
+      // TODO: CHANGE TO SERIAL2
+      Serial.print(RF, 2);
+      Serial.print(",\t");
+      Serial.print(GF, 2);
+      Serial.print(",\t");
+      Serial.print(BF, 2);
+      Serial.print(",\t");
+      Serial.println(CF, 2);
+      Serial.print("Number of samples: ");
+      Serial.println(numSamples);
       break;
     default:
       Serial.println("Doing Nothing");
@@ -331,7 +356,11 @@ void loop(){
 }
 
 float readPulse(){
-  return pulseIn(readPin, LOW)+pulseIn(readPin, HIGH);
+  Serial.print("Pulse in: ");
+  Serial.println(pulseIn(s5,LOW));
+  Serial.print("Pulse Out: ");
+  Serial.println(pulseIn(s5,HIGH));
+  return pulseIn(s5, LOW)+pulseIn(s5, HIGH);
 }
 
 float movingAverage(float * arr) {
