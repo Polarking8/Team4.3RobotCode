@@ -64,12 +64,13 @@ int HallEffect = A3;
 int DistanceSensor = A4;
 //End Pin table
 //_________________ Logic Variables + other
-char inputChar = 'm'; //m not used
+char inputChar = 'o'; //o not used
 int LeftMotorVal = 0;
 int RightMotorVal = 0;
 int servoAngle =  0;
 int conveyorVal = 0;
 int distVal = 0;
+int hallVal = 0;
 // Reflectance Sensor Variable initialization
 const uint8_t SensorCount = 8;  // # of sensors in reflectance array
 uint16_t sensor_Values[SensorCount];  //reflectance sensor readings
@@ -84,8 +85,10 @@ double error= 0;
 double t, t0, print_time=0; // declare some time variables
 double Kp=25; //Proportional Gain for Line Following
 double base_speed=50; //Nominal speed of robot
-
-
+//Color Sensor Vals
+const int numSamples = 8;
+float R[numSamples], G[numSamples], B[numSamples], C[numSamples]; // raw pulse time samples
+float RF, GF, BF, CF; // filtered data
 //Stop if motor drivers are faulty (I think)
 void stopIfFault()
 {
@@ -122,6 +125,17 @@ void setup(){
   qtr.setTypeRC();
   qtr.setSensorPins((const uint8_t[]){25,26,27,28,29,30,31,32},SensorCount);
   t0 = micros()/1000000.; // initialize time
+  //Set up color sensor
+  pinMode(Color1,OUTPUT);
+  pinMode(Color2,OUTPUT);
+  pinMode(Color3,OUTPUT);
+  pinMode(Color4,OUTPUT);
+  pinMode(Color5,INPUT);
+  pinMode(Color6,OUTPUT);
+  digitalWrite(Color1, HIGH); // s1 and s0 choose frequency scaling
+  digitalWrite(Color2, LOW);
+  digitalWrite(Color6, HIGH); //turn on LED
+
 }
 void loop(){
   
@@ -239,6 +253,55 @@ void loop(){
       Serial.println("Servo return position");
       servoAngle = 0;
       break; 
+    case 'n':// Read Hall Effect Sensor Vals
+      hallVal = analogRead(HallEffect);
+      Serial2.println(hallVal);
+      break;
+    case 'm': // Read color sensor vals
+      // Select RED Filter
+      digitalWrite(s2, LOW);
+      digitalWrite(s3, LOW);
+      delay(10);
+      for (int i = 0; i < numSamples; i++){
+        R[i] = readPulse();
+      }
+
+      // Select BLUE Filter
+      digitalWrite(s2, LOW);
+      digitalWrite(s3, HIGH);
+      delay(10);
+      for (int i = 0; i < numSamples; i++){
+        B[i] = readPulse();
+      }
+
+      // Select GREEN Filter
+      digitalWrite(s2, HIGH);
+      digitalWrite(s3, HIGH);
+      delay(10);
+      for (int i = 0; i < numSamples; i++){
+        G[i] = readPulse();
+      }
+
+      // Select CLEAR Filter
+      digitalWrite(s2, HIGH);
+      digitalWrite(s3, LOW);
+      delay(10);
+      for (int i = 0; i < numSamples; i++){
+        C[i] = readPulse();
+      }
+      RF = movingAverage(R);
+      GF = movingAverage(G);
+      BF = movingAverage(B);
+      CF = movingAverage(C);
+      //Print Vals
+      Serial2.print(RF, 2);
+      Serial2.print(",\t");
+      Serial2.print(GF, 2);
+      Serial2.print(",\t");
+      Serial2.print(BF, 2);
+      Serial2.print(",\t");
+      Serial2.println(CF, 2);
+      break;
     default:
       Serial.println("Doing Nothing");
       LeftMotorVal = 0;
@@ -266,12 +329,15 @@ void loop(){
     //Set both to 0
   }
 }
-  //Potentially recommended pseudocode
-  /*If Serial.available() Delay(20)
-    If Serial.available() == numOfDesiredInputChars + 1
-      xbeeSerial.write(Serial.read())
-      Do this numOfDesiredInputChars times
-      Serial.read()
-    Else
-      Print(“Wrong number of inputs, please input your command again”)
-      While Serial.available() Serial.read()*/
+
+float readPulse(){
+  return pulseIn(readPin, LOW)+pulseIn(readPin, HIGH);
+}
+
+float movingAverage(float * arr) {
+  float sum = 0;
+  for (int i = 0; i < numSamples; i++){
+    sum += arr[i]/numSamples;
+  }
+  return sum;
+}
