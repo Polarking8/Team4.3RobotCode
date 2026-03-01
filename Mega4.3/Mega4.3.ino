@@ -52,12 +52,13 @@ int Reflect6 = 30;
 int Reflect7 = 31;
 int Reflect8 = 32;
 //_________________ Color Sensor
-int s1 = 33;
-int s2 = 34;
-int s3 = 35;
-int s4 = 36;
-int s5 = 37;
-int s6 = 38;
+int s0 = 34; // was s1 = 33
+int s1 = 35; // was s2 = 34;
+int s2 = 36; // was s3 = 35
+int s3 = 36; // was s4 = 36
+int sOut = 38; // was s5 = 37
+//int s6 = 38;
+int LEDPin = 52;
 //_________________ Hall Effect 
 int HallEffect = A3;
 //_________________ Distance Sensor
@@ -89,6 +90,7 @@ double base_speed=50; //Nominal speed of robot
 const int numSamples = 8;
 float R[numSamples], G[numSamples], B[numSamples], C[numSamples]; // raw pulse time samples
 float RF, GF, BF, CF; // filtered data
+float RN, GN, BN; // normalized data
 //Stop if motor drivers are faulty (I think)
 void stopIfFault()
 {
@@ -126,16 +128,16 @@ void setup(){
   qtr.setSensorPins((const uint8_t[]){25,26,27,28,29,30,31,32},SensorCount);
   t0 = micros()/1000000.; // initialize time
   //Set up color sensor
+  pinMode(s0,OUTPUT);
   pinMode(s1,OUTPUT);
   pinMode(s2,OUTPUT);
   pinMode(s3,OUTPUT);
-  pinMode(s4,OUTPUT);
-  pinMode(s5,INPUT);
-  pinMode(s6,OUTPUT);
+  pinMode(sOut,INPUT);
+  //pinMode(s6,OUTPUT);
+  pinMode(LEDPin, OUTPUT);
   // s1 and s0 choose frequency scaling
-  digitalWrite(s1, HIGH);
-  digitalWrite(s2, LOW);
-  digitalWrite(s6, HIGH); //turn on LED
+  digitalWrite(s0, HIGH);
+  digitalWrite(s1, LOW);
 
 }
 void loop(){
@@ -268,64 +270,75 @@ void loop(){
       }
       break;
     case 'm': // Read color sensor vals
-      // Select RED Filter
-      digitalWrite(s2, LOW);
-      digitalWrite(s3, LOW);
-      delay(10);
-      for (int i = 0; i < numSamples; i++){
-        R[i] = readPulse();
-        Serial.println("Red Read: ");
-        Serial.println(R[i]);
-      }
 
-      // Select BLUE Filter
-      digitalWrite(s2, LOW);
-      digitalWrite(s3, HIGH);
-      delay(10);
-      for (int i = 0; i < numSamples; i++){
-        B[i] = readPulse();
-        Serial.println("Blue Read: ");
-        Serial.println(B[i]);
+      if (t-print_time>0.25) {
+        digitalWrite(LEDPin, HIGH); //turn on LED
+      
+        // Select RED Filter
+        digitalWrite(s2, LOW);
+        digitalWrite(s3, LOW);
+        delay(10);
+        for (int i = 0; i < numSamples; i++){
+          R[i] = readPulse(); // Read red (frequency)
+        }
+  
+        // Select BLUE Filter
+        digitalWrite(s2, LOW);
+        digitalWrite(s3, HIGH);
+        delay(10);
+        for (int i = 0; i < numSamples; i++){
+          B[i] = readPulse();
+        }
+  
+        // Select GREEN Filter
+        digitalWrite(s2, HIGH);
+        digitalWrite(s3, HIGH);
+        delay(10);
+        for (int i = 0; i < numSamples; i++){
+          G[i] = readPulse();
+        }
+  
+        // Select CLEAR Filter
+        digitalWrite(s2, HIGH);
+        digitalWrite(s3, LOW);
+        delay(10);
+        for (int i = 0; i < numSamples; i++){
+          C[i] = readPulse();
+        }
+  
+        // Calculate moving averages
+        RF = 1 / movingAverage(R);
+        GF = 1 / movingAverage(G);
+        BF = 1 / movingAverage(B);
+        CF = 1 / movingAverage(C);
+  
+        // Values normalized by clear
+        RN = 100 * RF / CF;
+        GN = 100 * GF / CF;
+        BN = 100 * BF / CF;
+        
+        //Print Vals
+        // TODO: CHANGE TO SERIAL2
+        Serial.print(RN, 4);
+        Serial.print(",\t");
+        Serial.print(GN, 4);
+        Serial.print(",\t");
+        Serial.print(BN, 4);
+        Serial.print(",\t");
+        Serial.println(CF, 4);
+  
+        // Map color sensor output to color guess
+        if ((55 < BN  && BN < 82) && (10 < RN && RN < 20) && (22 < GN && GN < 20)) {
+          Serial.println("Blue block detected");
+        } else if ((20 < BN && BN < 30) && (60 < RN && RN < 80) && (10 < GN && GN < 20)) {
+          Serial.println("Red block detected");
+        } else if ((20 < BN && BN < 50) && (40 < RN && RN < 80) && (30 < GN && GN < 60)) {
+          Serial.println("Yellow block detected");
+        } else {
+          Serial.println("Unable to determine block color");
+        }
+        print_time = t;
       }
-
-      // Select GREEN Filter
-      digitalWrite(s2, HIGH);
-      digitalWrite(s3, HIGH);
-      delay(10);
-      for (int i = 0; i < numSamples; i++){
-        G[i] = readPulse();
-        Serial.println("Green Read: ");
-        Serial.println(G[i]);
-      }
-
-      // Select CLEAR Filter
-      digitalWrite(s2, HIGH);
-      digitalWrite(s3, LOW);
-      delay(10);
-      for (int i = 0; i < numSamples; i++){
-        C[i] = readPulse();
-        Serial.println("Clear Read: ");
-        Serial.println(C[i]);
-      }
-      RF = movingAverage(R);
-      Serial.println("Red Average Calculated");
-      GF = movingAverage(G);
-      Serial.println("Green Average Calculated");
-      BF = movingAverage(B);
-      Serial.println("Blue Average Calculated");
-      CF = movingAverage(C);
-      Serial.println("Clear Average Calculated");
-      //Print Vals
-      // TODO: CHANGE TO SERIAL2
-      Serial.print(RF, 2);
-      Serial.print(",\t");
-      Serial.print(GF, 2);
-      Serial.print(",\t");
-      Serial.print(BF, 2);
-      Serial.print(",\t");
-      Serial.println(CF, 2);
-      Serial.print("Number of samples: ");
-      Serial.println(numSamples);
       break;
     default:
       Serial.println("Doing Nothing");
@@ -353,14 +366,12 @@ void loop(){
     analogWrite(M1PWMsolo,0);
     //Set both to 0
   }
+  // Turn off LED
+  digitalWrite(LEDPin, LOW);
 }
 
 float readPulse(){
-  Serial.print("Pulse in: ");
-  Serial.println(pulseIn(s5,LOW));
-  Serial.print("Pulse Out: ");
-  Serial.println(pulseIn(s5,HIGH));
-  return pulseIn(s5, LOW)+pulseIn(s5, HIGH);
+  return pulseIn(sOut, LOW)+pulseIn(sOut, HIGH);
 }
 
 float movingAverage(float * arr) {
