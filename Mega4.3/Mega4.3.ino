@@ -52,12 +52,12 @@ int Reflect6 = 30;
 int Reflect7 = 31;
 int Reflect8 = 32;
 //_________________ Color Sensor
-int Color1 = 33;
-int Color2 = 34;
-int Color3 = 35;
-int Color4 = 36;
-int Color5 = 37;
-int Color6 = 38;
+int colorOut = 38;
+int s3 = 37;
+int s2 = 36;
+int s1 = 35;
+int s0 = 34;
+int colorLED = 52;
 //_________________ Hall Effect 
 int HallEffect = A3;
 //_________________ Distance Sensor
@@ -90,19 +90,18 @@ const int numSamples = 8;
 float R[numSamples], G[numSamples], B[numSamples], C[numSamples]; // raw pulse time samples
 float RF, GF, BF, CF; // filtered data
 //Stop if motor drivers are faulty (I think)
-void stopIfFault()
-{
-  if (md.getM1Fault())
-  {
-    Serial.println("M1 fault");
-    while (1);
-  }
-  if (md.getM2Fault())
-  {
-    Serial.println("M2 fault");
-    while (1);
-  }
-}
+// void stopIfFault(){
+//   if (md.getM1Fault())
+//   {
+//     Serial.println("M1 fault");
+//     while (1);
+//   }
+//   if (md.getM2Fault())
+//   {
+//     Serial.println("M2 fault");
+//     while (1);
+//   }
+// }
 // L298NMotorDriverMega Conveyormotor(60,M1PWMsolo,M2PWMsolo,60,60,60);
 // L298N Conveyormotor2(55,M1PWMsolo,M2PWMsolo);// This pin is intentionally not a real pin (This code is duplicate to make sure things work)
 void setup(){
@@ -126,16 +125,15 @@ void setup(){
   qtr.setSensorPins((const uint8_t[]){25,26,27,28,29,30,31,32},SensorCount);
   t0 = micros()/1000000.; // initialize time
   //Set up color sensor
-  pinMode(Color1,OUTPUT);
-  pinMode(Color2,OUTPUT);
-  pinMode(Color3,OUTPUT);
-  pinMode(Color4,OUTPUT);
-  pinMode(Color5,INPUT);
-  pinMode(Color6,OUTPUT);
-  digitalWrite(Color1, HIGH); // s1 and s0 choose frequency scaling
-  digitalWrite(Color2, LOW);
-  digitalWrite(Color6, HIGH); //turn on LED
-
+  pinMode(s0,OUTPUT);
+  pinMode(s1,OUTPUT);
+  pinMode(s2,OUTPUT);
+  pinMode(s3,OUTPUT);
+  pinMode(colorOut,INPUT);
+  pinMode(colorLED,OUTPUT);
+  digitalWrite(s0, HIGH); // s1 and s0 choose frequency scaling
+  digitalWrite(s1, LOW);
+  digitalWrite(colorLED, LOW);
 }
 void loop(){
   
@@ -255,9 +253,12 @@ void loop(){
       break; 
     case 'n':// Read Hall Effect Sensor Vals
       hallVal = analogRead(HallEffect);
-      Serial2.println(hallVal);
+      Serial.println(hallVal);
       break;
     case 'm': // Read color sensor vals
+      // turn on LED
+      digitalWrite(colorLED, HIGH);
+      
       // Select RED Filter
       digitalWrite(s2, LOW);
       digitalWrite(s3, LOW);
@@ -294,13 +295,16 @@ void loop(){
       BF = movingAverage(B);
       CF = movingAverage(C);
       //Print Vals
-      Serial2.print(RF, 2);
-      Serial2.print(",\t");
-      Serial2.print(GF, 2);
-      Serial2.print(",\t");
-      Serial2.print(BF, 2);
-      Serial2.print(",\t");
-      Serial2.println(CF, 2);
+      Serial.print(RF, 2);
+      Serial.print(",\t");
+      Serial.print(GF, 2);
+      Serial.print(",\t");
+      Serial.print(BF, 2);
+      Serial.print(",\t");
+      Serial.println(CF, 2);
+
+      //turn off led
+      digitalWrite(colorLED, LOW);
       break;
     default:
       Serial.println("Doing Nothing");
@@ -314,9 +318,9 @@ void loop(){
   //Set motors to numbers set during switch case 
   Servo.write(servoAngle);
   md.setM2Speed(LeftMotorVal);
-  stopIfFault();
+  //stopIfFault();
   md.setM1Speed(RightMotorVal);
-  stopIfFault();
+  //stopIfFault();
   if(conveyorVal>0){
     analogWrite(M1PWMsolo,map(conveyorVal,0,400,0,255));//M1 is forward, M2 is backward
     analogWrite(M2PWMsolo,0);
@@ -331,7 +335,7 @@ void loop(){
 }
 
 float readPulse(){
-  return pulseIn(readPin, LOW)+pulseIn(readPin, HIGH);
+  return pulseIn(colorOut, LOW)+pulseIn(colorOut, HIGH);
 }
 
 float movingAverage(float * arr) {
