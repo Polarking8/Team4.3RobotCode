@@ -3,16 +3,17 @@
 // #include <L298N.h>
 //Backup plan
 #include <PWMServo.h>
-#include <DualTB9051FTGMotorShield.h>
+#include <DualTB9051FTGMotorShieldMod3230.h>
 //Unsure if this one works
 //#include "L298NMotorDriverMega.h"
 //Libarries
 PWMServo Servo; // Create servo object
 QTRSensors qtr; // create a reflectance sensor object
-DualTB9051FTGMotorShield md; // Create motor driver object
+DualTB9051FTGMotorShieldMod3230 md; // Create motor driver object
 // Variable Intialization
 unsigned long time = 0;
 unsigned long time_old = 0;
+unsigned long print_time=0;
 //Pin table
 //________________ Serial comms
 int USBRXCable = 0;
@@ -72,7 +73,6 @@ int RightMotorVal = 0;
 int servoAngle =  0;
 int conveyorVal = 0;
 int distVal = 0;
-int hallVal = 0;
 // Reflectance Sensor Variable initialization
 const uint8_t SensorCount = 8;  // # of sensors in reflectance array
 uint16_t sensor_Values[SensorCount];  //reflectance sensor readings
@@ -84,7 +84,6 @@ double dZero = 2.8;
 double Ai = 0;
 double Aid = 0;
 double error= 0;
-double t, t0, print_time=0; // declare some time variables
 double Kp=25; //Proportional Gain for Line Following
 double base_speed=50; //Nominal speed of robot
 //Color Sensor Vals
@@ -92,20 +91,26 @@ const int numSamples = 8;
 float R[numSamples], G[numSamples], B[numSamples], C[numSamples]; // raw pulse time samples
 float RF, GF, BF, CF; // filtered data
 float RN, GN, BN; // normalized data
+char color = 'e';
+
+//pm8 state machine
+int hitsLeft = -1;
+
+
 //Stop if motor drivers are faulty (I think)
-void stopIfFault()
-{
-  if (md.getM1Fault())
-  {
-    Serial.println("M1 fault");
-    while (1);
-  }
-  if (md.getM2Fault())
-  {
-    Serial.println("M2 fault");
-    while (1);
-  }
-}
+// void stopIfFault()
+// {
+//   if (md.getM1Fault())
+//   {
+//     Serial.println("M1 fault");
+//     while (1);
+//   }
+//   if (md.getM2Fault())
+//   {
+//     Serial.println("M2 fault");
+//     while (1);
+//   }
+// }
 // L298NMotorDriverMega Conveyormotor(60,M1PWMsolo,M2PWMsolo,60,60,60);
 // L298N Conveyormotor2(55,M1PWMsolo,M2PWMsolo);// This pin is intentionally not a real pin (This code is duplicate to make sure things work)
 void setup(){
@@ -127,7 +132,6 @@ void setup(){
   //Init reflectance sensor
   qtr.setTypeRC();
   qtr.setSensorPins((const uint8_t[]){25,26,27,28,29,30,31,32},SensorCount);
-  t0 = micros()/1000000.; // initialize time
   //Set up color sensor
   pinMode(s0,OUTPUT);
   pinMode(s1,OUTPUT);
@@ -152,7 +156,7 @@ void loop(){
     //inputString = ;
     inputChar = Serial2.read();
     }
-  t = micros()/1000000.-t0;
+  time = millis(); //time in seconds
   switch (inputChar) {
     case 'f': // forward drive motors
       Serial.println("Forward");
@@ -184,10 +188,10 @@ void loop(){
       break; 
     case 's': // Read distance sensor val
       distVal = analogRead(DistanceSensor);
-      if ((t-print_time)>0.25) { 
+      if ((time-print_time)>250) { 
         Serial2.println(distVal);
         Serial.println(distVal);
-        print_time=t;
+        print_time=time;
       }
       break;
     case 'x': // stop all
@@ -199,7 +203,7 @@ void loop(){
       break; 
     case 'a' ://read reflectance vals
       qtr.read(sensor_Values);
-      if ((t-print_time)>0.25) { 
+      if ((time-print_time)>250) { 
         for (uint8_t i=0; i < SensorCount; i++){
           Serial.print(sensor_Values[i]);
           Serial.print('\t');
@@ -210,7 +214,7 @@ void loop(){
         }
       Serial2.println(" ");
       Serial.println("");
-      print_time=t;
+      print_time=time;
       }
       break;
     case 'k': //Line following
@@ -258,7 +262,7 @@ void loop(){
       servoAngle = 0;
       break; 
     case 'o': // Servo oscillate push
-      if (t-print_time>0.3) {
+      if (time-print_time>200) {
         if (ButtonPushed) {
           Serial.println("Servo return position");
           servoAngle = 0;
@@ -268,94 +272,85 @@ void loop(){
           servoAngle = 52;
           ButtonPushed = true;
         }
-        print_time = t;
+        print_time = time;
       }
       break; 
     case 'n':// Read Hall Effect Sensor Vals
       // TODO: CHANGE TO SERIAL2
-      if (t-print_time>0.25) {
-        hallVal = analogRead(HallEffect); // Centerpoint should be 460
-        if (hallVal < 360 || hallVal > 550) {
+      if (time-print_time>250) {
+        if (checkSilverfish()){
           Serial.println("Silverfish detected");
-        } else {
+        } else{
           Serial.println("No silverfish detected");
         }
-        Serial.println(hallVal);
-        print_time = t;
-        //Serial2.println(hallVal);
+        print_time = time;
       }
       break;
     case 'm': // Read color sensor vals
-
-      if (t-print_time>0.25) {
-        digitalWrite(LEDPin, HIGH); //turn on LED
-      
-        // Select RED Filter
-        digitalWrite(s2, LOW);
-        digitalWrite(s3, LOW);
-        delay(10);
-        for (int i = 0; i < numSamples; i++){
-          R[i] = readPulse(); // Read red (frequency)
-        }
-  
-        // Select BLUE Filter
-        digitalWrite(s2, LOW);
-        digitalWrite(s3, HIGH);
-        delay(10);
-        for (int i = 0; i < numSamples; i++){
-          B[i] = readPulse();
-        }
-  
-        // Select GREEN Filter
-        digitalWrite(s2, HIGH);
-        digitalWrite(s3, HIGH);
-        delay(10);
-        for (int i = 0; i < numSamples; i++){
-          G[i] = readPulse();
-        }
-  
-        // Select CLEAR Filter
-        digitalWrite(s2, HIGH);
-        digitalWrite(s3, LOW);
-        delay(10);
-        for (int i = 0; i < numSamples; i++){
-          C[i] = readPulse();
-        }
-  
-        // Calculate moving averages
-        RF = 1 / movingAverage(R);
-        GF = 1 / movingAverage(G);
-        BF = 1 / movingAverage(B);
-        CF = 1 / movingAverage(C);
-  
-        // Values normalized by clear
-        RN = 100 * RF / CF;
-        GN = 100 * GF / CF;
-        BN = 100 * BF / CF;
-        
-        //Print Vals
-        // TODO: CHANGE TO SERIAL2
-        Serial.print(RN, 4);
-        Serial.print(",\t");
-        Serial.print(GN, 4);
-        Serial.print(",\t");
-        Serial.print(BN, 4);
-        Serial.print(",\t");
-        Serial.println(CF, 4);
-  
-        // Map color sensor output to color guess
-        if ((55 < BN  && BN < 82) && (10 < RN && RN < 20) && (22 < GN && GN < 20)) {
-          Serial.println("Blue block detected");
-        } else if ((20 < BN && BN < 30) && (60 < RN && RN < 80) && (10 < GN && GN < 20)) {
-          Serial.println("Red block detected");
-        } else if ((20 < BN && BN < 50) && (40 < RN && RN < 80) && (30 < GN && GN < 60)) {
-          Serial.println("Yellow block detected");
-        } else {
-          Serial.println("Unable to determine block color");
-        }
-        print_time = t;
+      if (time-print_time>250) {
+        color = checkColor();
+        Serial.print("detected a ");
+        Serial.print(color);
+        Serial.println(" LED");
+        print_time = time;
       }
       break;
+
+    case '8': //pm8
+    //controll logic with hitsLeft variable
+    //0 means it has finished mining block and will check hall effect
+    //-1 means it is ready to mine next block, will check color and set hits left to 10
+    //greater than 0 means it is working on mining
+      if (hitsLeft == -1) {
+        color = checkColor();
+        switch (color){
+        case 'y':
+            Serial.println("Mining Stone");
+            break;
+
+          case 'r':
+            Serial.println("Mining Iron");
+            break;
+
+          case 'b':
+            Serial.println("Mining Diamond");
+            break;
+
+          default:
+            Serial.println("Did not successfuly determine color");
+            break;
+          }
+        hitsLeft = 10;
+        ButtonPushed =false;
+        }
+
+      if (hitsLeft > 0){
+        if (time-print_time>200) {
+          if (ButtonPushed) {
+            //Serial.println("Servo return position");
+            servoAngle = 0;
+            ButtonPushed = false;
+            hitsLeft = hitsLeft-1;
+          } else {
+            //Serial.println("Servo push button");
+            servoAngle = 52;
+            ButtonPushed = true;
+          }
+          print_time = time;
+        }
+      }
+
+      if (hitsLeft == 0){
+        if(checkSilverfish){
+          Serial.println("Silverfish Detected, hitting 10 more times to kill it")
+          hitsLeft = 10;
+        } else{
+          Serial.println("No Silverfish Detected, mining next block");
+          hitsLeft = -1;
+        }
+      }
+      break;
+
     default:
       Serial.println("Doing Nothing");
       LeftMotorVal = 0;
@@ -382,18 +377,6 @@ void loop(){
     analogWrite(M1PWMsolo,0);
     //Set both to 0
   }
-  // Turn off LED
-  digitalWrite(LEDPin, LOW);
 }
 
-float readPulse(){
-  return pulseIn(sOut, LOW)+pulseIn(sOut, HIGH);
-}
 
-float movingAverage(float * arr) {
-  float sum = 0;
-  for (int i = 0; i < numSamples; i++){
-    sum += arr[i]/numSamples;
-  }
-  return sum;
-}
