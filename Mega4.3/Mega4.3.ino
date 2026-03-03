@@ -37,6 +37,7 @@ int XBeeTX = 16;
 int XBeeRX = 17; 
 //_________________ Pusher servo pin
 int ButtonServoPWM = 11;
+bool ButtonPushed = false;
 //_________________ Solo Motor Driver Shield
 int M1DIAGsolo = 22;
 int M1PWMsolo = 44;
@@ -55,7 +56,7 @@ int Reflect8 = 32;
 int s0 = 34; // was s1 = 33
 int s1 = 35; // was s2 = 34;
 int s2 = 36; // was s3 = 35
-int s3 = 36; // was s4 = 36
+int s3 = 37; // was s4 = 36
 int sOut = 38; // was s5 = 37
 //int s6 = 38;
 int LEDPin = 52;
@@ -256,15 +257,30 @@ void loop(){
       Serial.println("Servo return position");
       servoAngle = 0;
       break; 
+    case 'o': // Servo oscillate push
+      if (t-print_time>0.3) {
+        if (ButtonPushed) {
+          Serial.println("Servo return position");
+          servoAngle = 0;
+          ButtonPushed = false;
+        } else {
+          Serial.println("Servo push button");
+          servoAngle = 52;
+          ButtonPushed = true;
+        }
+        print_time = t;
+      }
+      break; 
     case 'n':// Read Hall Effect Sensor Vals
       // TODO: CHANGE TO SERIAL2
       if (t-print_time>0.25) {
         hallVal = analogRead(HallEffect); // Centerpoint should be 460
-        if (hallVal < 400 || hallVal > 510) {
+        if (hallVal < 360 || hallVal > 550) {
           Serial.println("Silverfish detected");
         } else {
           Serial.println("No silverfish detected");
         }
+        Serial.println(hallVal);
         print_time = t;
         //Serial2.println(hallVal);
       }
