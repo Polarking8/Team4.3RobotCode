@@ -1,5 +1,7 @@
 bool checkSilverfish(void){
   int hallVal = analogRead(HallEffect);
+  Serial.print("hall effect value is ");
+  Serial.println(hallVal);
   if (hallVal < 360 || hallVal > 550) {
     return true;
   } else{
@@ -62,13 +64,13 @@ char checkColor(void){
   Serial.println(CF, 4);
 
   // Map color sensor output to color guess
-  if ((55 < BN  && BN < 82) && (10 < RN && RN < 20) && (22 < GN && GN < 20)) {
+  if ((65 < BN  && BN < 80) && (0 < RN && RN < 10) && (20 < GN && GN < 30)) {
     //Serial.println("Blue block detected");
     return 'b';
-  } else if ((20 < BN && BN < 30) && (60 < RN && RN < 80) && (10 < GN && GN < 20)) {
+  } else if ((5 < BN && BN < 20) && (80 < RN && RN < 105) && (0 < GN && GN < 20)) {
     //Serial.println("Red block detected");
     return 'r';
-  } else if ((20 < BN && BN < 50) && (40 < RN && RN < 80) && (30 < GN && GN < 60)) {
+  } else if ((10 < BN && BN < 25) && (30 < RN && RN < 40) && (45 < GN && GN < 60)) {
     //Serial.println("Yellow block detected");
     return 'y';
   } else {
@@ -89,4 +91,3 @@ float movingAverage(float * arr) {
   return sum;
 } 
 
-        

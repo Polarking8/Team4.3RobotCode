@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <QTRSensors.h>
 // #include <L298NMotorDriverMega.h>
 // #include <L298N.h>
@@ -67,7 +68,7 @@ int HallEffect = A3;
 int DistanceSensor = A4;
 //End Pin table
 //_________________ Logic Variables + other
-char inputChar = 'o'; //o not used
+char inputChar = '1'; //o not used
 int LeftMotorVal = 0;
 int RightMotorVal = 0;
 int servoAngle =  0;
@@ -94,7 +95,7 @@ float RN, GN, BN; // normalized data
 char color = 'e';
 
 //pm8 state machine
-int hitsLeft = -1;
+int hitsLeft = -2;
 
 
 //Stop if motor drivers are faulty (I think)
@@ -149,7 +150,7 @@ void loop(){
   
   if (Serial.available()) {
     Serial2.println(Serial.readStringUntil('\n'));
-  }
+    }
   if (Serial2.available()>2) {
     // Serial.println(Serial1.readStringUntil('\n'));
     //inputString = Serial1.readStringUntil('\n').c_str();
@@ -298,10 +299,11 @@ void loop(){
 
     case '8': //pm8
     //controll logic with hitsLeft variable
-    //0 means it has finished mining block and will check hall effect
-    //-1 means it is ready to mine next block, will check color and set hits left to 10
+    //0 means it has finished mining and will wait to get a good hall effect reading
+    //-1 means it has finished mining block and will check hall effect
+    //-2 means it is ready to mine next block, will check color and set hits left to 10
     //greater than 0 means it is working on mining
-      if (hitsLeft == -1) {
+      if (hitsLeft == -2) {
         color = checkColor();
         switch (color){
         case 'y':
@@ -325,12 +327,13 @@ void loop(){
         }
 
       if (hitsLeft > 0){
-        if (time-print_time>200) {
+        if (time-print_time>400) {
           if (ButtonPushed) {
             //Serial.println("Servo return position");
             servoAngle = 0;
             ButtonPushed = false;
             hitsLeft = hitsLeft-1;
+            print_time = time;
           } else {
             //Serial.println("Servo push button");
             servoAngle = 52;
@@ -339,14 +342,22 @@ void loop(){
           print_time = time;
         }
       }
+      
+      if (hitsLeft == 0){ //wait for block to fall to check hall effect
+        Serial.println(time-print_time);
+        if (time-print_time>3000) {
+          hitsLeft = -1;
+          print_time = time;
+        }
+      }
 
-      if (hitsLeft == 0){
-        if(checkSilverfish){
-          Serial.println("Silverfish Detected, hitting 10 more times to kill it")
+      if (hitsLeft == -1){
+        if(checkSilverfish()){
+          Serial.println("Silverfish Detected, hitting 10 more times to kill it");
           hitsLeft = 10;
         } else{
           Serial.println("No Silverfish Detected, mining next block");
-          hitsLeft = -1;
+          hitsLeft = -2;
         }
       }
       break;
@@ -357,15 +368,16 @@ void loop(){
       RightMotorVal = 0;
       conveyorVal = 0;
       servoAngle = 0;
+      hitsLeft = -2;
       break;
       //Turn everything off
-  }
+    }
   //Set motors to numbers set during switch case 
   Servo.write(servoAngle);
   md.setM2Speed(LeftMotorVal);
-  stopIfFault();
+  //stopIfFault();
   md.setM1Speed(RightMotorVal);
-  stopIfFault();
+  //stopIfFault();
   if(conveyorVal>0){
     analogWrite(M1PWMsolo,map(conveyorVal,0,400,0,255));//M1 is forward, M2 is backward
     analogWrite(M2PWMsolo,0);
@@ -378,5 +390,4 @@ void loop(){
     //Set both to 0
   }
 }
-
 
