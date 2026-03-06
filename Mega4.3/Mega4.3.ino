@@ -162,6 +162,7 @@ void setup(){
 void loop(){
   counts1 = encoder1.read();
   counts2 = encoder2.read();
+  deltaT = t9-t_old9;
   if (Serial.available()) {
     Serial2.println(Serial.readStringUntil('\n'));
   }
@@ -374,8 +375,8 @@ void loop(){
     theta2_des = theta2_des + omega2_des*deltaT;
   }
   // add your control laws here
-  V1m = Kp*(theta1_des-theta1);
-  V2m = Kp*(theta2_des-theta2);
+  V1m = Kp9*(theta1_des-theta1);
+  V2m = Kp9*(theta2_des-theta2);
   
 
   // Uncomment these four lines in section 4.4
