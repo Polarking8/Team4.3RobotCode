@@ -1,3 +1,4 @@
+#include <Encoder.h>
 #include <QTRSensors.h>
 // #include <L298NMotorDriverMega.h>
 // #include <L298N.h>
@@ -89,6 +90,25 @@ double base_speed=50; //Nominal speed of robot
 const int numSamples = 8;
 float R[numSamples], G[numSamples], B[numSamples], C[numSamples]; // raw pulse time samples
 float RF, GF, BF, CF; // filtered data
+// PM 9 Variables 
+Encoder encoder1(DriveEncoder1ADual,DriveEncoder1BDual);
+Encoder encoder2(DriveEncoder2ADual,DriveEncoder2BDual);
+double t9, t_old9, deltaT, print_time, t09 = 0; // time vars
+double Kp9 = 15;
+double Pi = 3.14159268;
+long counts1, counts2;
+double GearRatio = 70;
+int countsPerRev = 64;
+double rw = 4.2;
+double D = 26; // Change this, distance between wheels in cm
+double theta1, theta1_old = 0, omega1;     //position and velocity of wheel 1
+double theta2, theta2_old = 0, omega2;     //position and velocity of wheel 2
+double omega2f = 0;
+double omega1f = 0, alpha = 0.05;             // filtered velocity and filter weight
+double theta1_des = 0, theta2_des = 0;     // desired position of wheels
+double theta1_final, theta2_final;         // final desired position of wheels
+double omega_des, omega1_des, omega2_des;  // desired velocity of wheels
+double V1m, V2m; // Commanded velocity
 //Stop if motor drivers are faulty (I think)
 void stopIfFault()
 {
@@ -125,6 +145,8 @@ void setup(){
   qtr.setTypeRC();
   qtr.setSensorPins((const uint8_t[]){25,26,27,28,29,30,31,32},SensorCount);
   t0 = micros()/1000000.; // initialize time
+  t_old9 = micros() / 1000000.;
+  t09 = micros() / 1000000.; // init time for pm9
   //Set up color sensor
   pinMode(Color1,OUTPUT);
   pinMode(Color2,OUTPUT);
@@ -138,7 +160,8 @@ void setup(){
 
 }
 void loop(){
-  
+  counts1 = encoder1.read();
+  counts2 = encoder2.read();
   if (Serial.available()) {
     Serial2.println(Serial.readStringUntil('\n'));
   }
@@ -302,6 +325,32 @@ void loop(){
       Serial2.print(",\t");
       Serial2.println(CF, 2);
       break;
+    case 'q': // PM9 forward trajectory
+      //TODO: ADD CODE FOR INPUT 
+
+      theta1_final = 50/rw;
+      theta2_final = -50/rw;  //move 50 cm
+      omega1_des = theta1_final/10; // 10 is time var
+
+
+      break;
+    case 't': // PM9 Turn in place 
+
+      theta1_final = D/2*Pi/rw;
+      theta2_final = -D/2*Pi/rw;
+      omega1_des = D/2*Pi/rw/5; //5 is our time var
+      omega2_des = -D/2*Pi/rw/5;
+
+
+      break;
+    case 'e': // PM9 Drive In Circle
+      theta1_final = (50+D)*Pi/2/rw;
+      theta2_final = (50)*Pi/2/rw;
+      omega1_des = theta1_final/5; // 5 is time var
+      omega2_des = theta2_final/5;
+
+
+      break:
     default:
       Serial.println("Doing Nothing");
       LeftMotorVal = 0;
@@ -311,6 +360,29 @@ void loop(){
       break;
       //Turn everything off
   }
+  //PM9 stuff
+  theta1 = counts1*2*Pi/GearRatio/countsPerRev;
+  omega1 = (theta1-theta1_old)/(deltaT);
+  omega1f = omega1*alpha + omega1f*(1-alpha);
+
+  theta2 = -1*(counts2*2*Pi/GearRatio/countsPerRev);
+  omega2 = (theta2-theta2_old)/(deltaT);
+  omega2f = omega2*alpha + omega2f*(1-alpha);
+  // add your trajectory design here
+  if(theta1_des<theta1_final){
+    theta1_des = theta1_des + omega1_des*deltaT;
+    theta2_des = theta2_des + omega2_des*deltaT;
+  }
+  // add your control laws here
+  V1m = Kp*(theta1_des-theta1);
+  V2m = Kp*(theta2_des-theta2);
+  
+
+  // Uncomment these four lines in section 4.4
+  V1m = constrain(V1m,-10,10);
+  V2m = constrain(V2m,-10,10);
+  LeftMotorVal = 400*V1m/10;
+  RightMotorVal = 400*V2m/10;
   //Set motors to numbers set during switch case 
   Servo.write(servoAngle);
   md.setM2Speed(LeftMotorVal);
