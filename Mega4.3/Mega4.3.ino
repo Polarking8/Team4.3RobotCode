@@ -93,14 +93,14 @@ float RF, GF, BF, CF; // filtered data
 // PM 9 Variables 
 Encoder encoder1(DriveEncoder1ADual,DriveEncoder1BDual);
 Encoder encoder2(DriveEncoder2ADual,DriveEncoder2BDual);
-double t9, t_old9, deltaT, print_time, t09 = 0; // time vars
+double t9, t_old9, deltaT, t09 = 0; // time vars
 double Kp9 = 15;
 double Pi = 3.14159268;
 long counts1, counts2;
 double GearRatio = 70;
 int countsPerRev = 64;
 double rw = 4.2;
-double D = 26; // Change this, distance between wheels in cm
+double D = 25.54; // Change this, distance between wheels in cm
 double theta1, theta1_old = 0, omega1;     //position and velocity of wheel 1
 double theta2, theta2_old = 0, omega2;     //position and velocity of wheel 2
 double omega2f = 0;
@@ -109,6 +109,9 @@ double theta1_des = 0, theta2_des = 0;     // desired position of wheels
 double theta1_final, theta2_final;         // final desired position of wheels
 double omega_des, omega1_des, omega2_des;  // desired velocity of wheels
 double V1m, V2m; // Commanded velocity
+bool firstRun = false;
+long encoderOffset1 = 0;
+long encoderOffset2 = 0;
 //Stop if motor drivers are faulty (I think)
 void stopIfFault()
 {
@@ -160,9 +163,7 @@ void setup(){
 
 }
 void loop(){
-  counts1 = encoder1.read();
-  counts2 = encoder2.read();
-  deltaT = t9-t_old9;
+  t = micros()/1000000.-t0;
   if (Serial.available()) {
     Serial2.println(Serial.readStringUntil('\n'));
   }
@@ -171,8 +172,11 @@ void loop(){
     //inputString = Serial1.readStringUntil('\n').c_str();
     //inputString = ;
     inputChar = Serial2.read();
-    }
-  t = micros()/1000000.-t0;
+    Serial2.readStringUntil('\n');
+    firstRun = true;
+    Serial2.println("Char received");
+  }
+  
   switch (inputChar) {
     case 'f': // forward drive motors
       Serial.println("Forward");
@@ -283,40 +287,40 @@ void loop(){
       break;
     case 'm': // Read color sensor vals
       // Select RED Filter
-      digitalWrite(s2, LOW);
-      digitalWrite(s3, LOW);
+      // digitalWrite(s2, LOW);
+      // digitalWrite(s3, LOW);
       delay(10);
       for (int i = 0; i < numSamples; i++){
-        R[i] = readPulse();
+        // R[i] = readPulse();
       }
 
       // Select BLUE Filter
-      digitalWrite(s2, LOW);
-      digitalWrite(s3, HIGH);
+      // digitalWrite(s2, LOW);
+      // digitalWrite(s3, HIGH);
       delay(10);
       for (int i = 0; i < numSamples; i++){
-        B[i] = readPulse();
+        // B[i] = readPulse();
       }
 
       // Select GREEN Filter
-      digitalWrite(s2, HIGH);
-      digitalWrite(s3, HIGH);
+      // digitalWrite(s2, HIGH);
+      // digitalWrite(s3, HIGH);
       delay(10);
       for (int i = 0; i < numSamples; i++){
-        G[i] = readPulse();
+        // G[i] = readPulse();
       }
 
       // Select CLEAR Filter
-      digitalWrite(s2, HIGH);
-      digitalWrite(s3, LOW);
+      // digitalWrite(s2, HIGH);
+      // digitalWrite(s3, LOW);
       delay(10);
       for (int i = 0; i < numSamples; i++){
-        C[i] = readPulse();
+        //C[i] = readPulse();
       }
-      RF = movingAverage(R);
-      GF = movingAverage(G);
-      BF = movingAverage(B);
-      CF = movingAverage(C);
+      // RF = movingAverage(R);
+      // GF = movingAverage(G);
+      // BF = movingAverage(B);
+      // CF = movingAverage(C);
       //Print Vals
       Serial2.print(RF, 2);
       Serial2.print(",\t");
@@ -327,31 +331,215 @@ void loop(){
       Serial2.println(CF, 2);
       break;
     case 'q': // PM9 forward trajectory
-      //TODO: ADD CODE FOR INPUT 
+      //TODO: ADD CODE FOR INPUT
+      if(firstRun==true){
+        
+        while (Serial2.available()<5){
+          delay(1);
+        }
+        String _ = ""; 
+        _ = Serial2.readStringUntil('\n');
+        float distanceToGo = _.toFloat();
+        Serial.print("I recieved ");
+        Serial.println(distanceToGo);
+        while (Serial2.available()<5){
+          delay(1);
+        }
+        _ = Serial2.readStringUntil('\n');
+        float speed = _.toFloat();
+        Serial.print("I recieved ");
+        Serial.println(speed);
+        encoderOffset1 = encoder1.read();
+        encoderOffset2 = encoder2.read();
+        theta1_des = 0;
+        theta2_des = 0;
+        firstRun = false;
+        t09 = micros()/1000000.;
+        t_old9 = 0;
+        theta1_final = distanceToGo/rw;
+        theta2_final = distanceToGo/rw;  //move 50 cm // was negative
+        omega1_des = speed/rw; // 10 is time var 
+        omega2_des = speed/rw;
+      }
+      counts1 = encoder1.read()-encoderOffset1;
+      counts2 = encoder2.read()-encoderOffset2;
+      t9 = micros()/1000000.-t09;
+      deltaT = t9-t_old9;
+      
+      //PM9 stuff
+      theta1 = counts1*2*Pi/GearRatio/countsPerRev;
+      omega1 = (theta1-theta1_old)/(deltaT); //dont use
+      omega1f = omega1*alpha + omega1f*(1-alpha); //dont use
 
-      theta1_final = 50/rw;
-      theta2_final = -50/rw;  //move 50 cm
-      omega1_des = theta1_final/10; // 10 is time var
+      theta2 = counts2*2*Pi/GearRatio/countsPerRev;
+      omega2 = (theta2-theta2_old)/(deltaT); //dont use
+      omega2f = omega2*alpha + omega2f*(1-alpha); //dont use
+      // add your trajectory design here
+      if(theta1_des<theta1_final){
+        theta1_des = theta1_des + omega1_des*deltaT;
+        theta2_des = theta2_des + omega2_des*deltaT;
+      }
+      // add your control laws here
+      V1m = Kp9*(theta1_des-theta1);
+      V2m = Kp9*(theta2_des-theta2);
+      
 
-
+      // Uncomment these four lines in section 4.4
+      V1m = constrain(V1m,-10,10);
+      V2m = constrain(V2m,-10,10);
+      LeftMotorVal = 400*V2m/10;
+      RightMotorVal = 400*V1m/10;
+      t_old9 = t9;
+      theta1_old = theta1;
+      theta2_old = theta2;
+      break;
+    case 'y':// read encoders
+      if(firstRun==true){
+        encoderOffset1 = encoder1.read();
+        encoderOffset2 = encoder2.read();
+        firstRun = false;
+      }
+      counts1 = encoder1.read()-encoderOffset1;
+      counts2 = encoder2.read()-encoderOffset2;
+      t9 = micros()/1000000.-t09;
+      deltaT = t9-t_old9;
+      if ((t-print_time)>0.25) {
+        Serial2.print(counts1);
+        Serial2.print(", \t");
+        Serial2.println(counts2);
+      print_time = t;
+      }
       break;
     case 't': // PM9 Turn in place 
+      if(firstRun==true){
 
-      theta1_final = D/2*Pi/rw;
-      theta2_final = -D/2*Pi/rw;
-      omega1_des = D/2*Pi/rw/5; //5 is our time var
-      omega2_des = -D/2*Pi/rw/5;
+        while (Serial2.available()<5){
+          delay(1);
+        }
+        String _ = ""; 
+        _ = Serial2.readStringUntil('\n');
+        float turnAngle = _.toFloat();
+        Serial.print("I recieved ");
+        Serial.println(turnAngle);
+        while (Serial2.available()<5){
+          delay(1);
+        }
+        _ = Serial2.readStringUntil('\n');
+        float timeTaken = _.toFloat();
+        Serial.print("I recieved ");
+        Serial.println(timeTaken);
 
+        encoderOffset1 = encoder1.read();
+        encoderOffset2 = encoder2.read();
+        theta1_des = 0;
+        theta2_des = 0;
+        firstRun = false;
+        t09 = micros()/1000000.;
+        t_old9 = 0;
 
+        theta1_final = D/2.*Pi/rw/180.*turnAngle; // 180 deg, math will be 
+        theta2_final = -D/2.*Pi/rw/180.*turnAngle; // was negative
+        omega1_des = theta1_final/timeTaken; //5 is our time var
+        omega2_des = theta2_final/timeTaken; // was negative
+      }
+      counts1 = encoder1.read()-encoderOffset1;
+      counts2 = encoder2.read()-encoderOffset2;
+      t9 = micros()/1000000.-t09;
+      deltaT = t9-t_old9;
+
+      //PM9 stuff
+      theta1 = counts1*2*Pi/GearRatio/countsPerRev;
+      omega1 = (theta1-theta1_old)/(deltaT);
+      omega1f = omega1*alpha + omega1f*(1-alpha);
+
+      theta2 = counts2*2*Pi/GearRatio/countsPerRev;
+      omega2 = (theta2-theta2_old)/(deltaT);
+      omega2f = omega2*alpha + omega2f*(1-alpha);
+      // add your trajectory design here
+      if(abs(theta1_des)<abs(theta1_final)){
+        theta1_des = theta1_des + omega1_des*deltaT;
+        theta2_des = theta2_des + omega2_des*deltaT;
+      }
+      // add your control laws here
+      V1m = Kp9*(theta1_des-theta1);
+      V2m = Kp9*(theta2_des-theta2);
+      
+
+      // Uncomment these four lines in section 4.4
+      V1m = constrain(V1m,-10,10);
+      V2m = constrain(V2m,-10,10);
+      LeftMotorVal = 400*V2m/10;
+      RightMotorVal = 400*V1m/10;
+      t_old9 = t9;
+      theta1_old = theta1;
+      theta2_old = theta2;
       break;
+
     case 'e': // PM9 Drive In Circle
-      theta1_final = (50+D)*Pi/2/rw;
-      theta2_final = (50)*Pi/2/rw;
-      omega1_des = theta1_final/5; // 5 is time var
-      omega2_des = theta2_final/5;
+      if(firstRun==true){
+        while (Serial2.available()<5){
+          delay(1);
+        }
+        String _ = ""; 
+        _ = Serial2.readStringUntil('\n');
+        float radius = _.toFloat();
+        Serial.print("I recieved ");
+        Serial.println(radius);
+        while (Serial2.available()<5){
+          delay(1);
+        }
+        _ = Serial2.readStringUntil('\n');
+        float yawAngle = _.toFloat();
+        Serial.print("I recieved ");
+        Serial.println(yawAngle);
 
+        encoderOffset1 = encoder1.read();
+        encoderOffset2 = encoder2.read();
+        theta1_des = 0;
+        theta2_des = 0;
+        firstRun = false;
+        t09 = micros()/1000000.;
+        t_old9 = 0;
 
-      break:
+        theta1_final = (radius+D)*Pi/2./rw/90.*yawAngle;
+        theta2_final = (radius)*Pi/2./rw/90.*yawAngle;
+        omega1_des = theta1_final/5.; // 5s is time var
+        omega2_des = theta2_final/5.;
+      }
+      counts1 = encoder1.read()-encoderOffset1;
+      counts2 = encoder2.read()-encoderOffset2;
+      t9 = micros()/1000000.-t09;
+      deltaT = t9-t_old9;
+
+      //
+      //PM9 stuff
+      theta1 = counts1*2*Pi/GearRatio/countsPerRev;
+      omega1 = (theta1-theta1_old)/(deltaT);
+      omega1f = omega1*alpha + omega1f*(1-alpha);
+
+      theta2 = (counts2*2*Pi/GearRatio/countsPerRev);
+      omega2 = (theta2-theta2_old)/(deltaT);
+      omega2f = omega2*alpha + omega2f*(1-alpha);
+      // add your trajectory design here
+      if(theta1_des<theta1_final){
+        theta1_des = theta1_des + omega1_des*deltaT;
+        theta2_des = theta2_des + omega2_des*deltaT;
+      }
+      // add your control laws here
+      V1m = Kp9*(theta1_des-theta1);
+      V2m = Kp9*(theta2_des-theta2);
+      
+
+      // Uncomment these four lines in section 4.4
+      V1m = constrain(V1m,-10,10);
+      V2m = constrain(V2m,-10,10);
+      LeftMotorVal = 400*V2m/10;
+      RightMotorVal = 400*V1m/10;
+      t_old9 = t9;
+      theta1_old = theta1;
+      theta2_old = theta2;
+      //
+      break;
     default:
       Serial.println("Doing Nothing");
       LeftMotorVal = 0;
@@ -361,29 +549,6 @@ void loop(){
       break;
       //Turn everything off
   }
-  //PM9 stuff
-  theta1 = counts1*2*Pi/GearRatio/countsPerRev;
-  omega1 = (theta1-theta1_old)/(deltaT);
-  omega1f = omega1*alpha + omega1f*(1-alpha);
-
-  theta2 = -1*(counts2*2*Pi/GearRatio/countsPerRev);
-  omega2 = (theta2-theta2_old)/(deltaT);
-  omega2f = omega2*alpha + omega2f*(1-alpha);
-  // add your trajectory design here
-  if(theta1_des<theta1_final){
-    theta1_des = theta1_des + omega1_des*deltaT;
-    theta2_des = theta2_des + omega2_des*deltaT;
-  }
-  // add your control laws here
-  V1m = Kp9*(theta1_des-theta1);
-  V2m = Kp9*(theta2_des-theta2);
-  
-
-  // Uncomment these four lines in section 4.4
-  V1m = constrain(V1m,-10,10);
-  V2m = constrain(V2m,-10,10);
-  LeftMotorVal = 400*V1m/10;
-  RightMotorVal = 400*V2m/10;
   //Set motors to numbers set during switch case 
   Servo.write(servoAngle);
   md.setM2Speed(LeftMotorVal);
@@ -403,14 +568,15 @@ void loop(){
   }
 }
 
-float readPulse(){
-  return pulseIn(readPin, LOW)+pulseIn(readPin, HIGH);
-}
 
-float movingAverage(float * arr) {
-  float sum = 0;
-  for (int i = 0; i < numSamples; i++){
-    sum += arr[i]/numSamples;
-  }
-  return sum;
-}
+// float readPulse(){
+//   //return pulseIn(readPin, LOW)+pulseIn(readPin, HIGH);
+// }
+
+// float movingAverage(float * arr) {
+//   float sum = 0;
+//   for (int i = 0; i < numSamples; i++){
+//     sum += arr[i]/numSamples;
+//   }
+//   return sum;
+// }
