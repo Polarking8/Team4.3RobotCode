@@ -9,8 +9,8 @@ void readHallSensor(){
   //add filtering
 }
 
-bool checkSilverfish(void){
-  hallVal = readHallSensor();
+bool checkSilverfish(){
+  readHallSensor(); //sets hallVal global variable
   Serial.print("hall effect value is ");
   Serial.println(hallVal);
   if (hallVal < 360 || hallVal > 550) {
@@ -62,9 +62,9 @@ char readColorSensor(){
   
   // Select RED Filter
   digitalWrite(ColorS2, LOW);
-  digitalWrite(ColorS3), LOW);
+  digitalWrite(ColorS3, LOW);
   delay(10);
-  for (int i = 0; i < numSamples; i++){
+  for (int i = 0; i < colorNumSamples; i++){
     colorR[i] = readPulse(); // Read red (frequency)
   }
 
@@ -72,7 +72,7 @@ char readColorSensor(){
   digitalWrite(ColorS2, LOW);
   digitalWrite(ColorS3, HIGH);
   delay(10);
-  for (int i = 0; i < numSamples; i++){
+  for (int i = 0; i < colorNumSamples; i++){
     colorB[i] = readPulse();
   }
 
@@ -80,7 +80,7 @@ char readColorSensor(){
   digitalWrite(ColorS2, HIGH);
   digitalWrite(ColorS3, HIGH);
   delay(10);
-  for (int i = 0; i < numSamples; i++){
+  for (int i = 0; i < colorNumSamples; i++){
     colorG[i] = readPulse();
   }
 
@@ -88,15 +88,15 @@ char readColorSensor(){
   digitalWrite(ColorS2, HIGH);
   digitalWrite(ColorS3, LOW);
   delay(10);
-  for (int i = 0; i < numSamples; i++){
+  for (int i = 0; i < colorNumSamples; i++){
     colorC[i] = readPulse();
   }
 
   // Calculate moving averages
-  colorRF = 1 / movingAverage(R);
-  colorGF = 1 / movingAverage(G);
-  colorBF = 1 / movingAverage(B);
-  colorCF = 1 / movingAverage(C);  
+  colorRF = 1 / movingAverage(colorR);
+  colorGF = 1 / movingAverage(colorG);
+  colorBF = 1 / movingAverage(colorB);
+  colorCF = 1 / movingAverage(colorC);  
 
   // Values normalized by clear
   colorRN = 100 * colorRF / colorCF;
@@ -130,13 +130,13 @@ char readColorSensor(){
 
 //accessory for readColorSensor
 float readPulse(){
-  return pulseIn(ColorIn, LOW)+pulseIn(ColorIN, HIGH);
+  return pulseIn(ColorIN, LOW)+pulseIn(ColorIN, HIGH);
 }
 
 float movingAverage(float * arr) {
   float sum = 0;
-  for (int i = 0; i < numSamples; i++){
-    sum += arr[i]/numSamples;
+  for (int i = 0; i < colorNumSamples; i++){
+    sum += arr[i]/colorNumSamples;
   }
   return sum;
 } 

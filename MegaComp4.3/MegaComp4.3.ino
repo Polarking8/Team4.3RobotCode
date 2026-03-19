@@ -9,6 +9,8 @@ QTRSensors qtr; // create a reflectance sensor object
 DualTB9051FTGMotorShieldMod3230 md; // Create motor driver object
 
 // Variable Intialization
+//pi for everything
+const double pi = 3.14159268;
 //Pin table
 //________________ Serial comms
 int USBRXCable = 0;
@@ -41,30 +43,30 @@ int ButtonServoPWM = 11;
 int MDIAGsolo = 22;
 int MPWM1solo = 44;
 int MPWM2solo = 45;
-int MOCMsolo = A2;
+int MOCMsolo = A13;
 
 //_________________ Reflectance Array
-int Reflect1 = 25;
-int Reflect2 = 26;
+int Reflect1 = 23;
+int Reflect2 = 25;
 int Reflect3 = 27;
-int Reflect4 = 28;
-int Reflect5 = 29;
-int Reflect6 = 30;
-int Reflect7 = 31;
-int Reflect8 = 32;
+int Reflect4 = 29;
+int Reflect5 = 31;
+int Reflect6 = 33;
+int Reflect7 = 35;
+int Reflect8 = 37;
 
 //_________________ Color Sensor
-int ColorS0 = 33; //not currently wired, will be different if we rewire
-int ColorS1 = 34;
-int ColorS2 = 35;
-int ColorS3 = 36;
-int ColorIN = 37;
+int ColorS0 = 24; //not currently wired, will be different if we rewire
+int ColorS1 = 26;
+int ColorS2 = 28;
+int ColorS3 = 30;
+int ColorIN = 32;
 
 //_________________ Hall Effect 
-int HallEffect = A3;
+int HallEffect = A15;
 
 //_________________ Distance Sensor
-int DistanceSensor = A4;
+int DistanceSensor = A14;
 
 //End Pin table
 //_________________ Logic Variables + other
@@ -77,7 +79,7 @@ unsigned long timeMS_old = 0; //update time old only after performing a print
 //put microseconds timer here
 
 //serial coms vars
-char inputChar = 'o'; //o not used
+char inputChar = 'x'; //the stop everything state
 
 //servo vars
 int servoRetractPos = 0; //set servo out and in positions here.
@@ -85,10 +87,10 @@ int servoPushPos = 52;
 int servoAngle =  servoRetractPos;
 
 //motor control vars
-int LeftMotorPower = 0; //beteween +400 and -400
-int RightMotorPower = 0;//beteween +400 and -400
+int leftMotorPower = 0; //beteween +400 and -400
+int rightMotorPower = 0;//beteween +400 and -400
 
-int conveyorVal = 0;    //beteween +400 and -400
+int conveyorPower = 0;    //beteween +400 and -400
 
 //encoder vars
 Encoder encoderR(DriveEncoderRADual,DriveEncoderRBDual); //right
@@ -112,8 +114,8 @@ int distVal = 0;
 int hallVal = 0;
 
 // Reflectance Sensor Vars
-const uint8_t LineSensorCount = 8;  // # of sensors in reflectance array
-uint16_t lineSensorValues[LineSensorCount];  //reflectance sensor readings
+const uint8_t lineSensorCount = 8;  // # of sensors in reflectance array
+uint16_t lineSensorValues[lineSensorCount];  //reflectance sensor readings
 uint16_t lineSensorBias[lineSensorCount] = {140,140,140,140,140,92,92,140}; //calibration data goes here
 double lineSensorPositions[lineSensorCount] = {-2.8, -2.0, -1.2, -0.4, 0.4, 1.2, 2.0, 2.8}; //in cm relative to center of sensor
 uint16_t lineSensorValuesUnbiased[lineSensorCount];
@@ -168,7 +170,7 @@ void setup(){
   pinMode(MPWM2solo,OUTPUT);
   //Init reflectance sensor
   qtr.setTypeRC();
-  qtr.setSensorPins((const uint8_t[]){Reflect1,Reflect2,Reflect3,Reflect4,Reflect5,Reflect6,Reflect7,Reflect8},SensorCount);
+  qtr.setSensorPins((const uint8_t[]){23,25,27,29,31,33,35,37},lineSensorCount);//cannot use variables from top make sure they match reflect1-8
   
   //Set up color sensor
   pinMode(ColorS0,OUTPUT);
@@ -222,7 +224,7 @@ void loop(){
     //z = servo retract
 
     //sensor testing
-    //s = distnace sensor
+    //i = distnace sensor
     //n = hall sensor
     //a = line sensor
     //m = color sensor
@@ -230,52 +232,52 @@ void loop(){
     //ect ect
     case 'x': // stop all
       Serial.println("Stopping everything");
-      LeftMotorVal = 0;
-      RightMotorVal = 0;
-      conveyorVal = 0;
+      leftMotorPower = 0;
+      rightMotorPower = 0;
+      conveyorPower = 0;
       servoAngle = servoRetractPos;
       break; 
 
     //cases for testing actuators
     case 'f': // dumb forward drive motors
       Serial.println("Forward");
-      LeftMotorVal = 200;
-      RightMotorVal = 200;
+      leftMotorPower = 200;
+      rightMotorPower = 200;
       break;
     case 'b' : // dumb back backward drive motors
       Serial.println("Backward");
-      LeftMotorVal = -200;
-      RightMotorVal = -200;
+      leftMotorPower = -200;
+      rightMotorPower = -200;
       break;
     case 'l': // dumb turn left
       Serial.println("Left");
-      LeftMotorVal = -200;
-      RightMotorVal = 200;
+      leftMotorPower = -200;
+      rightMotorPower = 200;
       break;
     case 'r' : // dumb turn right
       Serial.println("Right");
-      LeftMotorVal = 200;
-      RightMotorVal = -200;
+      leftMotorPower = 200;
+      rightMotorPower = -200;
       break;
     case 'u': // conveyer "forward"
       Serial.println("Conveyer Forward");
-      conveyorVal = 400;
+      conveyorPower = 400;
       break;
     case 'd' : // conveyer "Backward"
       Serial.println("Conveyer Backward");
-      conveyorVal = -400;
+      conveyorPower = -400;
       break;
     case 'p': // Servo state push
       Serial.println("Servo push button");
-      servoAngle = ServoPushPos;
+      servoAngle = servoPushPos;
       break; 
     case 'z': // Servo state return
       Serial.println("Servo return position");
-      servoAngle = ServoRetractPos;
+      servoAngle = servoRetractPos;
       break; 
 
     //cases for testing sensors
-    case 's': // Read distance sensor val 
+    case 'i': // Read distance sensor val 
       readDistanceSensor(); //function saves to global distVal
       if ((timeMS-timeMS_old)>250) { 
         Serial.println("reading distance sensor");
@@ -286,12 +288,12 @@ void loop(){
       break;
 
     case 'n': //read and print hall effect also print out thresholding results
-      readHallEffect(); //function saves to global hallVal
+      readHallSensor(); //function saves to global hallVal
 
       if ((timeMS-timeMS_old)>250) { 
         Serial.println("reading hall effect");
         Serial.println(hallVal);
-        if checkSilverfish(){
+        if (checkSilverfish()){
           Serial.println("silverfish detected");
         } else{
           Serial.println("no silverfish detected");
@@ -371,9 +373,9 @@ void loop(){
 
     default:
       Serial.println("Doing Nothing");
-      LeftMotorVal = 0;
-      RightMotorVal = 0;
-      conveyorVal = 0;
+      leftMotorPower = 0;
+      rightMotorPower = 0;
+      conveyorPower = 0;
       servoAngle = 0;
       break;
       //Turn everything off //same as case x
@@ -382,19 +384,19 @@ void loop(){
 
   //Set motors to numbers set during switch case 
   Servo.write(servoAngle);
-  md.setMLSpeed(LeftMotorVal);
+  md.setM1Speed(leftMotorPower); //motor 1 = left motor
   stopIfFault();
-  md.setMRSpeed(RightMotorVal);
+  md.setM2Speed(rightMotorPower); //motor 2 = right motor
   stopIfFault();
-  if(conveyorVal>0){
-    analogWrite(M1PWMsolo,map(conveyorVal,0,400,0,255));//M1 is forward, M2 is backward
-    analogWrite(M2PWMsolo,0);
-  } else if(conveyorVal <0){
-    analogWrite(M2PWMsolo,map(abs(conveyorVal),0,400,0,255));//M1 is forward, M2 is backward
-    analogWrite(M1PWMsolo,0);
-  }else if(conveyorVal == 0){
-    analogWrite(M2PWMsolo,0);
-    analogWrite(M1PWMsolo,0);
+  if(conveyorPower > 0){
+    analogWrite(MPWM1solo,map(conveyorPower,0,400,0,255));//M1 is forward, M2 is backward
+    analogWrite(MPWM2solo,0);
+  } else if(conveyorPower < 0){
+    analogWrite(MPWM2solo,map(abs(conveyorPower),0,400,0,255));//M1 is forward, M2 is backward
+    analogWrite(MPWM1solo,0);
+  }else if(conveyorPower == 0){
+    analogWrite(MPWM2solo,0);
+    analogWrite(MPWM1solo,0);
     //Set both to 0
   }
 }
