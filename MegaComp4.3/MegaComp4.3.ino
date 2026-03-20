@@ -106,6 +106,8 @@ double x = 0; //cm //all positions relative to center between wheels.
 double y = 0; //cm
 double theta = 0; //deg
 double distanceMoved = 0;
+double gearRatio = 70;
+double countsPerRev = 64;
 
 //sensor vars
 //distance sensor

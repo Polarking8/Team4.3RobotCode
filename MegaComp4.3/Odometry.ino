@@ -6,8 +6,8 @@ void OdoUpdate(){
   mLPosLast = mLPos;
 
   //read new encoder values
-  mRPos = encoderR.read() * 1; //some constant that translates counts to linear cm;
-  mLPos = encoderL.read() * 1; // wheel radius, as well as a couple other vars
+  mRPos = encoderR.read() * 4.2 * 2 * Pi * 70 / 64; //some constant that translates counts to linear cm;
+  mLPos = encoderL.read() * 4.2 * 2 * Pi * 70 / 64; // 4.2 is current wheel radius number, 2pi is needed, 70 is gear ratio, 64 is countsperrev
   
   //Calculate theta
   theta = theta + (mRPos-mRPosLast-mLPos+mLPosLast)/wheelSpacing/pi*360; //this will need calibration
@@ -18,5 +18,5 @@ void OdoUpdate(){
   //rotation matrix that with current theta to find offset from old position.
   x = (x*cosd(theta))+ (-1*sind(theta)*y); // rotation matrix  -- xcos theta -ysintheta
   y = (x*sind(theta))+(y*cosd(theta)); //  -- xsintheta + ycostheta
-  
+
 }
