@@ -95,6 +95,7 @@ int conveyorPower = 0;    //beteween +400 and -400
 //encoder vars
 Encoder encoderR(DriveEncoderRADual,DriveEncoderRBDual); //right
 Encoder encoderL(DriveEncoderLADual,DriveEncoderLBDual); //left
+double distanceMoved = 0; //distance moved in the last cycle
 double mRPos = 0; //encoder rotation in linear cm
 double mLPos = 0;
 double mRPosLast = 0; //encoder rotation from the last odometry update
