@@ -117,7 +117,7 @@ int hallVal = 0;
 const uint8_t lineSensorCount = 8;  // # of sensors in reflectance array
 uint16_t lineSensorValues[lineSensorCount];  //reflectance sensor readings
 uint16_t lineSensorBias[lineSensorCount] = {140,140,140,140,140,92,92,140}; //calibration data goes here
-double lineSensorPositions[lineSensorCount] = {-2.8, -2.0, -1.2, -0.4, 0.4, 1.2, 2.0, 2.8}; //in cm relative to center of sensor
+double lineSensorPositions[lineSensorCount] = {0.0, 0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 5.6}; //in cm relative to center of sensor
 uint16_t lineSensorValuesUnbiased[lineSensorCount];
 double lineAi = 0; //total sensor readings
 double lineAid = 0; //sensor readings weighted for distance
@@ -279,10 +279,10 @@ void loop(){
     //cases for testing sensors
     case 'i': // Read distance sensor val 
       readDistanceSensor(); //function saves to global distVal
-      if ((timeMS-timeMS_old)>250) { 
+      if ((timeMS-timeMS_old)>50) { 
         Serial.println("reading distance sensor");
         Serial.println(distVal);
-        Serial.println();
+        //Serial.println();
         timeMS_old = timeMS;
       }
       break;
@@ -303,7 +303,7 @@ void loop(){
       }
       break;
     
-    case 'a' ://read and print raw reflectance vals
+    case 'a' ://read and print line sensor vals
       readReflectanceSensor(); //function reads sensor does math and sets global variables;
       //print diagnostic data
       if ((timeMS-timeMS_old)>250) { 
@@ -384,9 +384,9 @@ void loop(){
 
   //Set motors to numbers set during switch case 
   Servo.write(servoAngle);
-  md.setM1Speed(leftMotorPower); //motor 1 = left motor
+  md.setM1Speed(rightMotorPower); //motor 1 = right motor
   stopIfFault();
-  md.setM2Speed(rightMotorPower); //motor 2 = right motor
+  md.setM2Speed(leftMotorPower); //motor 2 = left motor
   stopIfFault();
   if(conveyorPower > 0){
     analogWrite(MPWM1solo,map(conveyorPower,0,400,0,255));//M1 is forward, M2 is backward
