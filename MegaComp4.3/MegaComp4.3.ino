@@ -105,6 +105,7 @@ double wheelSpacing = 25.54; //wheel spacing
 double x = 0; //cm //all positions relative to center between wheels.
 double y = 0; //cm
 double theta = 0; //deg
+double distanceMoved = 0;
 
 //sensor vars
 //distance sensor
