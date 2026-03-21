@@ -6,17 +6,17 @@ void OdoUpdate(){
   mLPosLast = mLPos;
 
   //read new encoder values
-  mRPos = encoderR.read() * 4.2 * 2 * pi * 70 / 64; //some constant that translates counts to linear cm;
-  mLPos = encoderL.read() * 4.2 * 2 * pi * 70 / 64; // 4.2 is current wheel radius number, 2pi is needed, 70 is gear ratio, 64 is countsperrev
+  mRPos = encoderR.read() * 24.1274316; //constant converts counts to linear cm
+  //formula as follows: 64.0(counts/rev) / 70(gear ratio) * 2.0(part of circumfrence formula) * pi * 4.2(wheel radius)
+  mLPos = encoderL.read() * 24.1274316; 
   
   //Calculate theta
-  theta = theta + (mRPos-mRPosLast-mLPos+mLPosLast)/wheelSpacing/pi*360; //this will need calibration
+  theta = theta + (mRPos-mRPosLast-mLPos+mLPosLast)/wheelSpacing/pi*180.0; //this will need calibration
   
   //calculate new xy cords
-  //calculate distance moved forward (average of change in both encoder positions)
-  distanceMoved = ((mRPos-mRPosLast)+(mLPos-mLPosLast))/2;
+  //calculate distance moved forward in the last cycle (average of change in both encoder positions)
+  distanceMoved = ((mRPos-mRPosLast)+(mLPos-mLPosLast))/2.0;
   //rotation matrix that with current theta to find offset from old position.
-  x = (x*cos(theta*pi/180.0))+ (-1.0*sin(theta*pi/180.0)*y); // rotation matrix  -- xcos theta -ysintheta
-  y = (x*sin(theta*pi/180.0))+(y*cos(theta*pi/180.0)); //  -- xsintheta + ycostheta
-
+  x = x + distanceMoved*cos(theta*pi/180.0); // find delta x with polar to cartesian conversion
+  y = y + distanceMoved*sin(theta*pi/180.0);
 }

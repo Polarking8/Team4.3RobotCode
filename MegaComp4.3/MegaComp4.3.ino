@@ -103,6 +103,7 @@ double mLPosLast = 0;
 
 //navigation vars
 double wheelSpacing = 25.54; //wheel spacing
+//starting position of robot
 double x = 0; //cm //all positions relative to center between wheels.
 double y = 0; //cm
 double theta = 0; //deg
