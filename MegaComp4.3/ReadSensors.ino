@@ -40,9 +40,14 @@ void readReflectanceSensor(){
   lineAid = 0;
   for(int i = 0; i < lineSensorCount; i++){
     lineAid = lineAid + lineSensorValuesUnbiased[i] * lineSensorPositions[i]; //do weighted average to find "center of mass"
-    lineAi = lineAi+ lineSensorValuesUnbiased[i];
+    lineAi = lineAi + lineSensorValuesUnbiased[i];
   }
-  linePosition = lineAid/lineAi;
+  //if lineAi = 0 it will cause a divide by zero error and break the code. Fix this by if lineAi = 0 set to very small number
+  if (lineAi == 0){
+    lineAi = 0.1;
+    //can also use this as a line detection validity, if Ai = 0 or is very small there probably isnt a line in sight and value isnt valid;
+  }
+  linePosition = lineAid/lineAi-2.8; //-2.8 to put 0 in center of sensor
 
   //Serial.print(lineAid); //more optional telemetry
   //Serial.print('\t');
