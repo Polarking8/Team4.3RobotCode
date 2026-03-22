@@ -85,12 +85,15 @@ char inputChar = 'x'; //the stop everything state
 int servoRetractPos = 0; //set servo out and in positions here.
 int servoPushPos = 52;
 int servoAngle =  servoRetractPos;
+bool isRetracted = true;
+bool isPushed = false;
 
 //motor control vars
 int leftMotorPower = 0; //beteween +400 and -400
 int rightMotorPower = 0;//beteween +400 and -400
 
 int conveyorPower = 0;    //beteween +400 and -400
+bool isDropped = false; //whether or not the conveyor belt has been dropped
 
 //encoder vars
 Encoder encoderR(DriveEncoderRADual,DriveEncoderRBDual); //right
@@ -107,9 +110,6 @@ double wheelSpacing = 25.54; //wheel spacing
 double x = 0; //cm //all positions relative to center between wheels.
 double y = 0; //cm
 double theta = 0; //deg
-double distanceMoved = 0;
-double gearRatio = 70;
-double countsPerRev = 64;
 
 //sensor vars
 //distance sensor
@@ -227,6 +227,7 @@ void loop(){
     //d = conveyor backwards
     //p = servo push
     //z = servo retract
+    //y = PM10 Conveyer + servo pushing
 
     //sensor testing
     //i = distnace sensor
@@ -241,6 +242,8 @@ void loop(){
       rightMotorPower = 0;
       conveyorPower = 0;
       servoAngle = servoRetractPos;
+      isRetracted = true;
+      isPushed = false;
       break; 
 
     //cases for testing actuators
@@ -275,12 +278,42 @@ void loop(){
     case 'p': // Servo state push
       Serial.println("Servo push button");
       servoAngle = servoPushPos;
+      isPushed = true;
+      isRetracted = false;
       break; 
     case 'z': // Servo state return
       Serial.println("Servo return position");
       servoAngle = servoRetractPos;
+      isRetracted = true;
+      isPushed = false;
       break; 
-
+    case 'y': //PM10 Conveyor + servo
+      conveyorPower = 400; // set the conveyor forward
+      if(isDropped == false){
+        timeMS = millis();
+        Serial.println("Dropping");
+        conveyorPower = -400;
+        if ((timeMS-timeMS_old)>3000) { 
+        timeMS_old = timeMS;
+        isDropped = true;
+        conveyorPower = 400;
+        Serial.println(timeMS);
+        Serial.println(timeMS_old);
+        }
+      }
+      if ((timeMS-timeMS_old)>150&&isPushed) { 
+        timeMS_old = timeMS;
+        servoAngle = servoRetractPos;
+        isRetracted = true;
+        isPushed = false;
+      }
+      if ((timeMS-timeMS_old)>750&&isRetracted) { 
+        timeMS_old = timeMS;
+        servoAngle = servoPushPos;
+        isRetracted = false;
+        isPushed = true;
+      }
+      break;
     //cases for testing sensors
     case 'i': // Read distance sensor val 
       readDistanceSensor(); //function saves to global distVal
