@@ -11,6 +11,11 @@ float t_old = 0;
 // int LEDval =0;
 // int potInput = 0;
 
+const byte numChars = 128;
+char receivedChars[numChars];
+
+boolean newData = false;
+
 void setup()  {
   // Open serial communications with computer and wait for port to open:
   Serial.begin(57600);  // make sure to also select this baud rate in your Serial Monitor window
@@ -44,8 +49,40 @@ void loop(){
   if (Serial.available()) {
      mySerial.println(Serial.readStringUntil('\n'));
   }
-  if (mySerial.available()) {
-    Serial.println(mySerial.readStringUntil('\n'));
+
+  static boolean recvInProgress = false;
+  static byte ndx = 0;
+  char startMarker = '<';
+  char endMarker = '>';
+  char rc;
+ 
+  while (mySerial.available() > 0 && newData == false) {
+    rc = mySerial.read();
+
+    if (recvInProgress == true) {
+      if (rc != endMarker) {
+        receivedChars[ndx] = rc;
+        ndx++;
+        if (ndx >= numChars) {
+            ndx = numChars - 1;
+        }
+      }
+      else {
+        receivedChars[ndx] = '\0'; // terminate the string
+        recvInProgress = false;
+        ndx = 0;
+        newData = true;
+      }
+    }
+
+    else if (rc == startMarker) {
+        recvInProgress = true;
+    }
   }
-  delay(20);
+  
+  if (newData == true) {
+    //Serial.print("This just in ... ");
+    Serial.println(receivedChars);
+    newData = false;
+  }
 }

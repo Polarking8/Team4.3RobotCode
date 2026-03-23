@@ -78,6 +78,11 @@ unsigned long timeMS_old = 0; //update time old only after performing a print
 //micros timer for real time and pid applications
 //put microseconds timer here
 
+//state machine variables
+int state = 0; // main state machine controll variable
+bool isPushed = false;
+
+
 //serial coms vars
 char inputChar = 'x'; //the stop everything state
 
@@ -85,15 +90,12 @@ char inputChar = 'x'; //the stop everything state
 int servoRetractPos = 0; //set servo out and in positions here.
 int servoPushPos = 52;
 int servoAngle =  servoRetractPos;
-bool isRetracted = true;
-bool isPushed = false;
 
 //motor control vars
 int leftMotorPower = 0; //beteween +400 and -400
 int rightMotorPower = 0;//beteween +400 and -400
 
 int conveyorPower = 0;    //beteween +400 and -400
-bool isDropped = false; //whether or not the conveyor belt has been dropped
 
 //encoder vars
 Encoder encoderR(DriveEncoderRADual,DriveEncoderRBDual); //right
@@ -168,7 +170,10 @@ void setup(){
   //
   md.init();
   md.enableDrivers();
+  //send start flag
+  Serial2.print('<');
   Serial2.print("Hello Uno Arduino!");
+  Serial2.print('>');
   Servo.attach(ButtonServoPWM);
   //This pinmode makes the conveyer work, we are manually going to analogWrite()
   pinMode(MPWM1solo,OUTPUT);
@@ -196,14 +201,19 @@ void loop(){
   OdoUpdate();
   
   //check serial monitor
-  if (Serial.available()) {
-    Serial2.println(Serial.readStringUntil('\n'));
-  }
+  //if (Serial.available()) {
+  //  Serial2.println(Serial.readStringUntil('\n'));
+  //}
   if (Serial2.available()>2) {
     // Serial.println(Serial1.readStringUntil('\n'));
     //inputString = Serial1.readStringUntil('\n').c_str();
     //inputString = ;
     inputChar = Serial2.read();
+
+    //fresh comand reset state machine
+    state = 0;
+    isPushed = false;
+    timeMS_old = timeMS;
   }
   
   //main switch to decide what operating mode
@@ -242,7 +252,6 @@ void loop(){
       rightMotorPower = 0;
       conveyorPower = 0;
       servoAngle = servoRetractPos;
-      isRetracted = true;
       isPushed = false;
       break; 
 
@@ -279,39 +288,41 @@ void loop(){
       Serial.println("Servo push button");
       servoAngle = servoPushPos;
       isPushed = true;
-      isRetracted = false;
       break; 
     case 'z': // Servo state return
       Serial.println("Servo return position");
       servoAngle = servoRetractPos;
-      isRetracted = true;
       isPushed = false;
       break; 
     case 'y': //PM10 Conveyor + servo
-      conveyorPower = 400; // set the conveyor forward
-      if(isDropped == false){
-        timeMS = millis();
-        Serial.println("Dropping");
-        conveyorPower = -400;
-        if ((timeMS-timeMS_old)>3000) { 
-        timeMS_old = timeMS;
-        isDropped = true;
-        conveyorPower = 400;
-        Serial.println(timeMS);
-        Serial.println(timeMS_old);
-        }
-      }
-      if ((timeMS-timeMS_old)>150&&isPushed) { 
-        timeMS_old = timeMS;
-        servoAngle = servoRetractPos;
-        isRetracted = true;
-        isPushed = false;
-      }
-      if ((timeMS-timeMS_old)>750&&isRetracted) { 
-        timeMS_old = timeMS;
-        servoAngle = servoPushPos;
-        isRetracted = false;
-        isPushed = true;
+      switch (state){
+        case 0:
+          //start dropping conveyor
+          conveyorPower = -400;
+
+          //wait 2000ms
+          if ((timeMS-timeMS_old) > 2000){
+            timeMS_old = timeMS;
+            state = state + 1;
+          }
+          break;
+
+        case 1:
+          //start moving conveyor
+          conveyorPower = 400;
+
+          //start spaming button
+          if (((timeMS-timeMS_old)>150) && (isPushed)) { 
+            timeMS_old = timeMS;
+            servoAngle = servoRetractPos;
+            isPushed = false;
+          }
+          if (((timeMS-timeMS_old)>750) && (!isPushed)) { 
+            timeMS_old = timeMS;
+            servoAngle = servoPushPos;
+            isPushed = true;
+          }
+          break;
       }
       break;
     //cases for testing sensors
@@ -392,19 +403,23 @@ void loop(){
 
     case 'o': //case to readout odometry
     //note odometry updates regardless of case
-      if ((timeMS-timeMS_old)>100) { 
-        Serial.println("reading odometry results");
-        Serial.print("x = ");
-        Serial.print(x);
-        Serial.print('\t');
+      if ((timeMS-timeMS_old)>250) { 
+        //send start flag
+        Serial2.print('<');
+        Serial2.println("reading odometry results");
+        Serial2.print("x = ");
+        Serial2.print(x);
+        Serial2.print('\t');
 
-        Serial.print("y = ");
-        Serial.print(y);
-        Serial.print('\t');
+        Serial2.print("y = ");
+        Serial2.print(y);
+        Serial2.print('\t');
 
-        Serial.print("theta = ");
-        Serial.println(theta);
-        Serial.println();
+        Serial2.print("theta = ");
+        Serial2.println(theta);
+        //send end flag
+        Serial2.print('>');
+
         timeMS_old = timeMS;
       }
       break;
