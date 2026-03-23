@@ -73,7 +73,8 @@ int DistanceSensor = A14;
 //timers
 //ms timer for printing occasionaly
 unsigned long timeMS = 0;
-unsigned long timeMS_old = 0; //update time old only after performing a print
+unsigned long timeMS_old = 0;
+unsigned long timeMSpusher_old = 0; //update time old only after performing a print
 
 //micros timer for real time and pid applications
 //put microseconds timer here
@@ -214,6 +215,7 @@ void loop(){
     state = 0;
     isPushed = false;
     timeMS_old = timeMS;
+    timeMSpusher_old = timeMS;
   }
   
   //main switch to decide what operating mode
@@ -300,6 +302,18 @@ void loop(){
           //start dropping conveyor
           conveyorPower = -400;
 
+          //start spaming button
+          if (((timeMS-timeMSpusher_old)>140) && (isPushed)) { 
+            timeMSpusher_old = timeMS;
+            servoAngle = servoRetractPos;
+            isPushed = false;
+          }
+          if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
+            timeMSpusher_old = timeMS;
+            servoAngle = servoPushPos;
+            isPushed = true;
+          }
+
           //wait 2000ms
           if ((timeMS-timeMS_old) > 2000){
             timeMS_old = timeMS;
@@ -312,13 +326,13 @@ void loop(){
           conveyorPower = 400;
 
           //start spaming button
-          if (((timeMS-timeMS_old)>150) && (isPushed)) { 
-            timeMS_old = timeMS;
+          if (((timeMS-timeMSpusher_old)>140) && (isPushed)) { 
+            timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
             isPushed = false;
           }
-          if (((timeMS-timeMS_old)>750) && (!isPushed)) { 
-            timeMS_old = timeMS;
+          if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
+            timeMSpusher_old = timeMS;
             servoAngle = servoPushPos;
             isPushed = true;
           }
