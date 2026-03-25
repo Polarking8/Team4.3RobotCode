@@ -1,4 +1,7 @@
 void OdoUpdate(){
+  // Fudge factor to make distances more accurate
+  double distanceFudgeFactor = 1.023;
+  
   //reads the encoders and performs math to update
   //sets global x, y, theta variables
   //Units are degrees and centimeters
@@ -6,9 +9,9 @@ void OdoUpdate(){
   mLPosLast = mLPos;
 
   //read new encoder values
-  mRPos = encoderR.read() * 0.005890486; //constant converts counts to linear cm
+  mRPos = encoderR.read() * 0.005890486 * distanceFudgeFactor; //constant converts counts to linear cm
   //formula as follows: 1 / 64.0(counts/rev) / 70(gear ratio) * 2.0(part of circumfrence formula) * pi * 4.2(wheel radius)
-  mLPos = encoderL.read() * 0.005890486; 
+  mLPos = encoderL.read() * 0.005890486 * distanceFudgeFactor; 
   
   //Calculate theta
   theta = theta + (mRPos-mRPosLast-mLPos+mLPosLast)/wheelSpacing/pi*180.0; //this will need calibration
