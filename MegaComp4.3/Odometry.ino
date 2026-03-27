@@ -14,12 +14,12 @@ void OdoUpdate(){
   mLPos = encoderL.read() * 0.005890486 * distanceFudgeFactor; 
   
   //Calculate theta
-  theta = theta + (mRPos-mRPosLast-mLPos+mLPosLast)/wheelSpacing/pi*180.0; //this will need calibration
+  actualP.theta = actualP.theta + (mRPos-mRPosLast-mLPos+mLPosLast)/wheelSpacing/pi*180.0; //this will need calibration
   
   //calculate new xy cords
   //calculate distance moved forward in the last cycle (average of change in both encoder positions)
   distanceMoved = ((mRPos-mRPosLast)+(mLPos-mLPosLast))/2.0;
   //rotation matrix that with current theta to find offset from old position.
-  x = x + distanceMoved*cos(theta*pi/180.0); // find delta x with polar to cartesian conversion
-  y = y + distanceMoved*sin(theta*pi/180.0);
+  actualP.x = actualP.x + distanceMoved*cos(actualP.theta*pi/180.0); // find delta x with polar to cartesian conversion
+  actualP.y = actualP.y + distanceMoved*sin(actualP.theta*pi/180.0);
 }

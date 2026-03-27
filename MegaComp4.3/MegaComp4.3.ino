@@ -77,7 +77,10 @@ unsigned long timeMS_old = 0;
 unsigned long timeMSpusher_old = 0; //update time old only after performing a print
 
 //micros timer for real time and pid applications
-//put microseconds timer here
+double timeTraj = 0; //time in seconds relative to trajectory start
+double timeTrajStart = 0;
+double timeTrajStepStart = 0; //time from when overall trajectory started to when traj step started
+double timeTrajStepFinish = 0; //time trajectory step will finish at, relative to start of trajectory step
 
 //state machine variables
 int state = 0; // main state machine controll variable
@@ -86,6 +89,7 @@ bool isPushed = false;
 
 //serial coms vars
 char inputChar = 'x'; //the stop everything state
+bool freshCommand = true; //flag var for restarting state machines
 
 //servo vars
 int servoRetractPos = 0; //set servo out and in positions here.
@@ -107,12 +111,39 @@ double mLPos = 0;
 double mRPosLast = 0; //encoder rotation from the last odometry update
 double mLPosLast = 0;
 
+//trajectory gen vars
+struct Pose{ //struct to store any x, y, theta coordiante
+  double x;
+  double y;
+  double theta;
+};
+struct PandV{ //struct to store all position and velocity vars needed to run ramsete
+  Pose p;
+  double v;
+  double w;
+};
+
+float maxVel = 20; //cm/s //max vel of center of robot
+float maxAccel = 30; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
+//will be updated during the trajectory following to the current theoretical (if it was following perfectly) x,y,theta, and velocities
+PandV PandVdes;
+int trajStep = 0;
+Pose initialP = {
+  .x = 0,
+  .y = 0,
+  .theta = 0
+};
+Pose stepStartP = initialP;
+
+double arcRadiusNext = 0; //occasionaly used variable for the arc radius of the upcoming trajectory step
+double vNext = 0; //used to remember what the velocity will be for the current step.
 //navigation vars
 double wheelSpacing = 25.54; //wheel spacing
 //starting position of robot
-double x = 0; //cm //all positions relative to center between wheels.
-double y = 0; //cm
-double theta = 0; //deg
+Pose actualP = initialP;
+
+
+
 
 //sensor vars
 //distance sensor
@@ -167,6 +198,8 @@ void setup(){
   //initialize timers
   timeMS = millis();
   timeMS_old = timeMS;
+  timeTrajStart = micros() / 1000000.0;
+  timeTraj = micros() / 1000000.0 - timeTrajStart;
 
   //
   md.init();
@@ -212,10 +245,10 @@ void loop(){
     inputChar = Serial2.read();
 
     //fresh comand reset state machine
-    state = 0;
-    isPushed = false;
-    timeMS_old = timeMS;
-    timeMSpusher_old = timeMS;
+    
+    freshCommand = true;
+  } else{
+    freshCommand = false;
   }
   
   //main switch to decide what operating mode
@@ -247,6 +280,7 @@ void loop(){
     //a = line sensor
     //m = color sensor
     //o = odometry
+    //R = reset odometry to initial coordinates
     //ect ect
     case 'x': // stop all
       Serial.println("Stopping everything");
@@ -297,6 +331,14 @@ void loop(){
       isPushed = false;
       break; 
     case 'y': //PM10 Conveyor + servo
+      //if flag var is true, reset state machine timers and state
+      if (freshCommand){
+        state = 0;
+        isPushed = false;
+        timeMS_old = timeMS;
+        timeMSpusher_old = timeMS;
+      }
+
       switch (state){
         case 0:
           //start dropping conveyor
@@ -422,20 +464,25 @@ void loop(){
         Serial2.print('<');
         Serial2.println("reading odometry results");
         Serial2.print("x = ");
-        Serial2.print(x);
+        Serial2.print(actualP.x);
         Serial2.print('\t');
 
         Serial2.print("y = ");
-        Serial2.print(y);
+        Serial2.print(actualP.y);
         Serial2.print('\t');
 
         Serial2.print("theta = ");
-        Serial2.println(theta);
+        Serial2.println(actualP.theta);
         //send end flag
         Serial2.print('>');
 
         timeMS_old = timeMS;
       }
+      break;
+    
+    //reset odometry to initial position
+    case 'R':
+      actualP = initialP;
       break;
 
     default:
