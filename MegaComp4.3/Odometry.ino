@@ -22,4 +22,7 @@ void OdoUpdate(){
   //rotation matrix that with current theta to find offset from old position.
   actualP.x = actualP.x + distanceMoved*cos(actualP.theta*pi/180.0); // find delta x with polar to cartesian conversion
   actualP.y = actualP.y + distanceMoved*sin(actualP.theta*pi/180.0);
+
+  mRVel = (mRPos-mRPosLast)/deltaTTraj*alpha+mRVel*(alpha-1); // velocity, in cm/s 
+  mLVel = (mLPos-mLPosLast)/deltaTTraj*alpha+mRVel*(alpha-1); 
 }

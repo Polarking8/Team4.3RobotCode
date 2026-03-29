@@ -112,6 +112,18 @@ double mRPos = 0; //encoder rotation in linear cm
 double mLPos = 0;
 double mRPosLast = 0; //encoder rotation from the last odometry update
 double mLPosLast = 0;
+double mRVel = 0;
+double mLVel = 0; // calculated thru Odometry.ino
+double alpha = 0.25; // this is for filtering the velocity
+double mRVelDes = 0;
+double mLVelDes = 0; // desired velocity 
+
+//RAM-SETE variables (including PID)
+double KpVel = 0; // Proportional Gain
+double KiVel = 0; // Integral 
+double KdVel = 0; // Derivative
+PID pidL(&mLVel,&leftMotorPower,&mLVelDes,KpVel,KiVel,KdVel,DIRECT);
+PID pidR(&mRVel,&rightMotorPower,&mRVelDes,KpVel,KiVel,KdVel,DIRECT);
 
 //trajectory gen vars
 struct Pose{ //struct to store any x, y, theta coordiante
@@ -143,9 +155,6 @@ double vNext = 0; //used to remember what the velocity will be for the current s
 double wheelSpacing = 25.54; //wheel spacing
 //starting position of robot
 Pose actualP = initialP;
-
-
-
 
 //sensor vars
 //distance sensor
@@ -219,7 +228,9 @@ void setup(){
   //Init reflectance sensor
   qtr.setTypeRC();
   qtr.setSensorPins((const uint8_t[]){23,25,27,29,31,33,35,37},lineSensorCount);//cannot use variables from top make sure they match reflect1-8
-  
+  //Set up PIDs
+  pidL.SetMode(AUTOMATIC);
+  pidR.SetMode(AUTOMATIC);
   //Set up color sensor
   pinMode(ColorS0,OUTPUT);
   pinMode(ColorS1,OUTPUT);
@@ -288,9 +299,11 @@ void loop(){
       //do ramsete to calculate target motor velocity
 
       //do rate limiting to cap target motor velocity if it changed too much
-
+      mRVelDes = 5;
+      mLVelDes = 5;
       //do velocity pid and set motor power
-
+      pidL.compute();
+      pidR.compute();
       break;
 
     //debuging modes
