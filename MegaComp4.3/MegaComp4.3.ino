@@ -91,7 +91,7 @@ int state = 0; // main state machine controll variable
 bool isPushed = false;
 
 //serial coms vars
-char inputChar = 's';//'x'; //the stop everything state
+char inputChar = 'x';//'x'; //the stop everything state
 bool freshCommand = true; //flag var for restarting state machines
 
 //servo vars
@@ -333,7 +333,22 @@ void loop(){
       //   mLVelDes = mRVelDes;
       // }
       //do rate limiting to cap target motor velocity if it changed too much
-
+      attemptAccelL = (mLVelDes-mLVelDesLimit) / deltaTTraj; // compute attempted accelerations to check if we're gonna overtune
+      attemptAccelR = (mRVelDes-mRVelDesLimit) / deltaTTraj;
+      if (attemptAccelL > maxAccel){
+        mLVelDesLimit = mLVelDesLimit + (maxAccel*deltaTTraj);
+      }else if (attemptAccelL < -1*maxAccel){
+        mLVelDesLimit = mLVelDesLimit - (maxAccel*deltaTTraj);
+      }else{
+        mLVelDesLimit = mLVelDes;
+      }
+      if (attemptAccelR > maxAccel){
+        mRVelDesLimit = mRVelDesLimit + (maxAccel*deltaTTraj);
+      }else if (attemptAccelR < -1*maxAccel){
+        mRVelDesLimit = mRVelDesLimit - (maxAccel*deltaTTraj);
+      }else{
+        mRVelDesLimit = mRVelDes;
+      }
 
       //do velocity pid and set motor power
       pidL.Compute();
