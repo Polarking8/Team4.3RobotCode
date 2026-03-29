@@ -119,15 +119,18 @@ double mLVel = 0; // calculated thru Odometry.ino
 double alpha = 0.25; // this is for filtering the velocity
 double mRVelDes = 0;
 double mLVelDes = 0; // desired velocity 
+double mLVelDesLimit = 0;
+double mRVelDesLimit = 0; // rate limiters
 
 //RAM-SETE variables + PID initialization
 double KfVel = 7.5;
 double KpVel = 15; // Proportional Gain
 double KiVel = 0; // Integral 
 double KdVel = 0; // Derivative
-PID pidL(&mLVel, &leftMotorPowerDouble, &mLVelDes, KpVel, KiVel, KdVel, DIRECT);
-PID pidR(&mRVel, &rightMotorPowerDouble, &mRVelDes, KpVel, KiVel, KdVel, DIRECT);
-
+PID pidL(&mLVel, &leftMotorPowerDouble, &mLVelDesLimit, KpVel, KiVel, KdVel, DIRECT);
+PID pidR(&mRVel, &rightMotorPowerDouble, &mRVelDesLimit, KpVel, KiVel, KdVel, DIRECT);
+double attemptAccelL = 0;
+double attemptAccelR = 0;
 //trajectory gen vars
 struct Pose{ //struct to store any x, y, theta coordiante
   double x;
@@ -312,9 +315,6 @@ void loop(){
       }
       //do ramsete to calculate target motor velocity
       //sets mLVelDes, and mLVelDes
-
-      //do rate limiting to cap target motor velocity if it changed too much
-      //temp manualy set values
       if ((timeMS-timeMSpusher_old)<1500) { 
         mRVelDes = 40;
         mLVelDes = 40;
@@ -324,12 +324,16 @@ void loop(){
       } else{
         timeMSpusher_old = timeMS;
       }
+      //temp manualy set values
+      
 
       // if (Serial.available()>=4) {
       //   String _ = Serial.readStringUntil('\n');
       //   mRVelDes = _.toFloat();
       //   mLVelDes = mRVelDes;
       // }
+      //do rate limiting to cap target motor velocity if it changed too much
+
 
       //do velocity pid and set motor power
       pidL.Compute();
