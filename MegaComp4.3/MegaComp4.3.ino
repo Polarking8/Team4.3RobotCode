@@ -91,7 +91,7 @@ int state = 0; // main state machine controll variable
 bool isPushed = false;
 
 //serial coms vars
-char inputChar = 'x'; //the stop everything state
+char inputChar = 's';//'x'; //the stop everything state
 bool freshCommand = true; //flag var for restarting state machines
 
 //servo vars
@@ -102,6 +102,8 @@ int servoAngle =  servoRetractPos;
 //motor control vars
 int leftMotorPower = 0; //beteween +400 and -400
 int rightMotorPower = 0;//beteween +400 and -400
+double leftMotorPowerDouble = 0.0;
+double rightMotorPowerDouble = 0.0;
 int conveyorPower = 0;    //beteween +400 and -400
 
 //encoder vars
@@ -119,11 +121,12 @@ double mRVelDes = 0;
 double mLVelDes = 0; // desired velocity 
 
 //RAM-SETE variables + PID initialization
-double KpVel = 0; // Proportional Gain
+double KfVel = 7.5;
+double KpVel = 15; // Proportional Gain
 double KiVel = 0; // Integral 
 double KdVel = 0; // Derivative
-PID pidL(&mLVel,&leftMotorPower,&mLVelDes,KpVel,KiVel,KdVel,DIRECT);
-PID pidR(&mRVel,&rightMotorPower,&mRVelDes,KpVel,KiVel,KdVel,DIRECT);
+PID pidL(&mLVel, &leftMotorPowerDouble, &mLVelDes, KpVel, KiVel, KdVel, DIRECT);
+PID pidR(&mRVel, &rightMotorPowerDouble, &mRVelDes, KpVel, KiVel, KdVel, DIRECT);
 
 //trajectory gen vars
 struct Pose{ //struct to store any x, y, theta coordiante
@@ -241,19 +244,18 @@ void setup(){
 
 
 void loop(){
+  
   //update timers
   timeMS = millis();
 
   timeTrajOld = timeTraj;
-  timeTraj = micros() / 10000000.0 - timeTrajStart;
+  timeTraj = micros() / 1000000.0 - timeTrajStart;
   deltaTTraj = timeTraj-timeTrajOld;
   //update odometry this does all the encoder reading internaly
   OdoUpdate();
   
   //check serial monitor
-  //if (Serial.available()) {
-  //  Serial2.println(Serial.readStringUntil('\n'));
-  //}
+  
   if (Serial2.available()>2) {
     // Serial.println(Serial1.readStringUntil('\n'));
     //inputString = Serial1.readStringUntil('\n').c_str();
@@ -271,7 +273,7 @@ void loop(){
   switch (inputChar) {
     //main comp code
     case 's':
-      Serial.println("Running main comp code");
+      //Serial.println("Running main comp code");
       //all comp logic flow lives here
 
       //if flag var is true, reset state machine timers and state
@@ -309,23 +311,44 @@ void loop(){
           break;
       }
       //do ramsete to calculate target motor velocity
-
-      //do rate limiting to cap target motor velocity if it changed too much
-<<<<<<< Updated upstream
-      mRVelDes = 5;
-      mLVelDes = 5;
-      //do velocity pid and set motor power
-      pidL.compute();
-      pidR.compute();
-=======
       //sets mLVelDes, and mLVelDes
 
+      //do rate limiting to cap target motor velocity if it changed too much
+      //temp manualy set values
+      if ((timeMS-timeMSpusher_old)<1500) { 
+        mRVelDes = 40;
+        mLVelDes = 40;
+      } else if ((timeMS-timeMSpusher_old)<3000){
+        mRVelDes = -40;
+        mLVelDes = -40;
+      } else{
+        timeMSpusher_old = timeMS;
+      }
+
+      // if (Serial.available()>=4) {
+      //   String _ = Serial.readStringUntil('\n');
+      //   mRVelDes = _.toFloat();
+      //   mLVelDes = mRVelDes;
+      // }
 
       //do velocity pid and set motor power
+      pidL.Compute();
+      pidR.Compute();
+      leftMotorPower = round(leftMotorPowerDouble+KfVel*mLVelDes); //also add feed forward
+      rightMotorPower = round(rightMotorPowerDouble+KfVel*mRVelDes);
+      if ((timeMS-timeMS_old)>25) { 
+        Serial2.print("<");
+        Serial2.print(mRVel);
+        Serial2.print("\t");
+        Serial2.print(mRVelDes);
+        Serial2.print("\t");
+        Serial2.print(deltaTTraj,8);
+        Serial2.print(">");
+        timeMS_old = timeMS;
+      }
+      
+
       //will set leftMotorPower and rightMotorPower
-
-
->>>>>>> Stashed changes
       break;
 
     //debugging modes
