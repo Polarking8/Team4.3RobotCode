@@ -78,6 +78,8 @@ unsigned long timeMSpusher_old = 0; //update time old only after performing a pr
 
 //micros timer for real time and pid applications
 double timeTraj = 0; //time in seconds relative to trajectory start
+double timeTrajOld = 0; //one loop old time in seconds relative to traj start
+double deltaTTraj = 0; //time the last whole loop took
 double timeTrajStart = 0;
 double timeTrajStepStart = 0; //time from when overall trajectory started to when traj step started
 double timeTrajStepFinish = 0; //time trajectory step will finish at, relative to start of trajectory step
@@ -200,6 +202,8 @@ void setup(){
   timeMS_old = timeMS;
   timeTrajStart = micros() / 1000000.0;
   timeTraj = micros() / 1000000.0 - timeTrajStart;
+  timeTrajOld = timeTraj;
+  deltaTTraj = 0;
 
   //
   md.init();
@@ -257,6 +261,29 @@ void loop(){
     case 's':
       Serial.println("Running main comp code");
       //all comp logic flow lives here
+
+      //if flag var is true, reset state machine timers and state
+      if (freshCommand){
+        state = 0;
+        isPushed = false;
+        timeMS_old = timeMS;
+        timeMSpusher_old = timeMS;
+
+        timeTrajStart = micros() / 1000000.0;
+
+      }
+
+      //update timers
+      timeTrajOld = timeTraj;
+      timeTraj = micros() / 10000000.0 - timeTrajStart;
+      deltaTTraj = timeTraj-timeTrajOld;
+
+      //start trajecotry
+      switch (state) {
+        case 0:
+          //
+          break;
+      }
       break;
 
     //debuging modes
