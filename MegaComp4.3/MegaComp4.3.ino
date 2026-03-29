@@ -1,3 +1,4 @@
+#include <PID_v1.h>
 #include <Encoder.h>
 #include <QTRSensors.h>
 #include <PWMServo.h>
@@ -11,6 +12,7 @@ DualTB9051FTGMotorShieldMod3230 md; // Create motor driver object
 // Variable Intialization
 //pi for everything
 const double pi = 3.14159268;
+
 //Pin table
 //________________ Serial comms
 int USBRXCable = 0;
@@ -88,7 +90,6 @@ double timeTrajStepFinish = 0; //time trajectory step will finish at, relative t
 int state = 0; // main state machine controll variable
 bool isPushed = false;
 
-
 //serial coms vars
 char inputChar = 'x'; //the stop everything state
 bool freshCommand = true; //flag var for restarting state machines
@@ -101,7 +102,6 @@ int servoAngle =  servoRetractPos;
 //motor control vars
 int leftMotorPower = 0; //beteween +400 and -400
 int rightMotorPower = 0;//beteween +400 and -400
-
 int conveyorPower = 0;    //beteween +400 and -400
 
 //encoder vars
@@ -118,7 +118,7 @@ double alpha = 0.25; // this is for filtering the velocity
 double mRVelDes = 0;
 double mLVelDes = 0; // desired velocity 
 
-//RAM-SETE variables (including PID)
+//RAM-SETE variables + PID initialization
 double KpVel = 0; // Proportional Gain
 double KiVel = 0; // Integral 
 double KdVel = 0; // Derivative
@@ -180,7 +180,6 @@ float colorRF, colorGF, colorBF, colorCF; // filtered data
 float colorRN, colorGN, colorBN; //normalized data
 char color = 'e'; //last read color (can be r, y, b, or e for error)
 
-
 //Stop if motor drivers are faulty
 void stopIfFault()
 {
@@ -214,7 +213,6 @@ void setup(){
   timeTrajOld = timeTraj;
   deltaTTraj = 0;
 
-  //
   md.init();
   md.enableDrivers();
   //send start flag
@@ -279,9 +277,7 @@ void loop(){
         isPushed = false;
         timeMS_old = timeMS;
         timeMSpusher_old = timeMS;
-
         timeTrajStart = micros() / 1000000.0;
-
       }
 
       //update timers
@@ -289,7 +285,7 @@ void loop(){
       timeTraj = micros() / 10000000.0 - timeTrajStart;
       deltaTTraj = timeTraj-timeTrajOld;
 
-      //start trajecotry
+      //start trajectory
       switch (state) {
         case 0:
           //
@@ -306,7 +302,7 @@ void loop(){
       pidR.compute();
       break;
 
-    //debuging modes
+    //debugging modes
     //legend: keep this updated please
     //x = stop all
 
@@ -328,7 +324,7 @@ void loop(){
     //m = color sensor
     //o = odometry
     //R = reset odometry to initial coordinates
-    //ect ect
+    //etc.
     case 'x': // stop all
       Serial.println("Stopping everything");
       leftMotorPower = 0;
@@ -385,7 +381,6 @@ void loop(){
         timeMS_old = timeMS;
         timeMSpusher_old = timeMS;
       }
-
       switch (state){
         case 0:
           //start dropping conveyor
@@ -539,9 +534,8 @@ void loop(){
       conveyorPower = 0;
       servoAngle = 0;
       break;
-      //Turn everything off //same as case x
+      //Turn everything off, same as case x
   }
-
 
   //Set motors to numbers set during switch case 
   Servo.write(servoAngle);
