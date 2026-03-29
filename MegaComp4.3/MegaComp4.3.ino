@@ -284,6 +284,13 @@ void loop(){
           //
           break;
       }
+
+      //do ramsete to calculate target motor velocity
+
+      //do rate limiting to cap target motor velocity if it changed too much
+
+      //do velocity pid and set motor power
+
       break;
 
     //debuging modes
