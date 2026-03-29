@@ -244,6 +244,9 @@ void loop(){
   //update timers
   timeMS = millis();
 
+  timeTrajOld = timeTraj;
+  timeTraj = micros() / 10000000.0 - timeTrajStart;
+  deltaTTraj = timeTraj-timeTrajOld;
   //update odometry this does all the encoder reading internaly
   OdoUpdate();
   
@@ -281,25 +284,48 @@ void loop(){
       }
 
       //update timers
-      timeTrajOld = timeTraj;
-      timeTraj = micros() / 10000000.0 - timeTrajStart;
-      deltaTTraj = timeTraj-timeTrajOld;
+      
 
       //start trajectory
       switch (state) {
-        case 0:
-          //
+        case 0: //start traj
+          trajStep = 0;
+          state = state+1;
+          break;
+
+        case 1: //while running traj
+          //update trajectory command
+          GenTrajectory(); //updates PandVdes to follow the trajectory
+
+          //escape once trajStep reaches the end
+//watch out for wrong traj step ending number.
+  //yes I know this is defnitely a bad way to do this.
+          if (trajStep == 3){
+            state = state + 1;
+          }
+          break;
+
+        default:
           break;
       }
-
       //do ramsete to calculate target motor velocity
 
       //do rate limiting to cap target motor velocity if it changed too much
+<<<<<<< Updated upstream
       mRVelDes = 5;
       mLVelDes = 5;
       //do velocity pid and set motor power
       pidL.compute();
       pidR.compute();
+=======
+      //sets mLVelDes, and mLVelDes
+
+
+      //do velocity pid and set motor power
+      //will set leftMotorPower and rightMotorPower
+
+
+>>>>>>> Stashed changes
       break;
 
     //debugging modes

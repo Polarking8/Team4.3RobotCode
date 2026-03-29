@@ -1,6 +1,6 @@
 
 
-void GenTrajectory(double t){
+void GenTrajectory(void){
   //sets global vars for current desired position, and desired velocity in time since trajectory start
   //while driving trajectories this should be called every cycle
   //on starting driving trajectory, set trajStep to 0 and all else is covered internaly.
@@ -63,11 +63,12 @@ void GenTrajectory(double t){
       }
       break;
 
-    //once we run out of trajectory steps, will go to default which will set velocities to zero and enabe next part of state machine
-    default:
+    case 3: // end of trajectory //uses the fact that traj step = 3 to signal that its finished the trajectory
       PandVdes.v = 0;
       PandVdes.w = 0;
-      state = state + 1;
+    
+    default:
+      Serial.println("trajectory error, be woo be woo be woo");
       break;
   }
 }
