@@ -144,7 +144,7 @@ struct PandV{ //struct to store all position and velocity vars needed to run ram
 };
 
 float maxVel = 20; //cm/s //max vel of center of robot
-float maxAccel = 30; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
+float maxAccel = 100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
 //will be updated during the trajectory following to the current theoretical (if it was following perfectly) x,y,theta, and velocities
 PandV PandVdes;
 int trajStep = 0;
@@ -353,8 +353,8 @@ void loop(){
       //do velocity pid and set motor power
       pidL.Compute();
       pidR.Compute();
-      leftMotorPower = round(leftMotorPowerDouble+KfVel*mLVelDes); //also add feed forward
-      rightMotorPower = round(rightMotorPowerDouble+KfVel*mRVelDes);
+      leftMotorPower = round(leftMotorPowerDouble+KfVel*mLVelDesLimit); //also add feed forward
+      rightMotorPower = round(rightMotorPowerDouble+KfVel*mRVelDesLimit);
       if ((timeMS-timeMS_old)>25) { 
         Serial2.print("<");
         Serial2.print(mRVel);
