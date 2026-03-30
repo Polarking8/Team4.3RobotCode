@@ -116,7 +116,7 @@ double mRPosLast = 0; //encoder rotation from the last odometry update
 double mLPosLast = 0;
 double mRVel = 0;
 double mLVel = 0; // calculated thru Odometry.ino
-double alpha = 0.25; // this is for filtering the velocity
+double alpha = 0.2; // this is for filtering the velocity
 double mRVelDes = 0;
 double mLVelDes = 0; // desired velocity 
 double mLVelDesLimit = 0;
@@ -143,8 +143,8 @@ struct PandV{ //struct to store all position and velocity vars needed to run ram
   double w;
 };
 
-float maxVel = 20; //cm/s //max vel of center of robot
-float maxAccel = 100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
+float maxVel = 10; //cm/s //max vel of center of robot
+float maxAccel = 100;//100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
 //will be updated during the trajectory following to the current theoretical (if it was following perfectly) x,y,theta, and velocities
 PandV PandVdes;
 int trajStep = 0;
@@ -161,6 +161,20 @@ double vNext = 0; //used to remember what the velocity will be for the current s
 double wheelSpacing = 25.54; //wheel spacing
 //starting position of robot
 Pose actualP = initialP;
+
+//ramsete vars
+Pose errorP = { //error in the local frame of the robot (rotation matrix applied)
+  .x = 0,
+  .y = 0,
+  .theta = 0
+};
+//gains
+double ramB = 2; //proportional term for ramsete controller
+double ramD = 0.7; //damping term of ramsete controller
+
+double ramK = 0; //intermediate gain value for ramsete conroller
+double ramVdes = 0; //linear and rotational velocities the robot needs to follow (after closing loop)
+double ramWdes = 0;
 
 //sensor vars
 //distance sensor
@@ -295,6 +309,8 @@ void loop(){
       switch (state) {
         case 0: //start traj
           trajStep = 0;
+          //reset actaul position
+          actualP = initialP;
           state = state+1;
           break;
 
@@ -305,7 +321,7 @@ void loop(){
           //escape once trajStep reaches the end
 //watch out for wrong traj step ending number.
   //yes I know this is defnitely a bad way to do this.
-          if (trajStep == 3){
+          if (trajStep == 5){
             state = state + 1;
           }
           break;
@@ -315,22 +331,25 @@ void loop(){
       }
       //do ramsete to calculate target motor velocity
       //sets mLVelDes, and mLVelDes
-      if ((timeMS-timeMSpusher_old)<1500) { 
-        mRVelDes = 40;
-        mLVelDes = 40;
-      } else if ((timeMS-timeMSpusher_old)<3000){
-        mRVelDes = -40;
-        mLVelDes = -40;
-      } else{
-        timeMSpusher_old = timeMS;
-      }
-      //temp manualy set values
-      
+      Ramsete();
 
+
+      //temp manualy set values
+      // if ((timeMS-timeMSpusher_old)<1500) { 
+      //   mRVelDes = 40;
+      //   mLVelDes = 40;
+      // } else if ((timeMS-timeMSpusher_old)<3000){
+      //   mRVelDes = -40;
+      //   mLVelDes = -40;
+      // } else{
+      //   timeMSpusher_old = timeMS;
+      // }
+      
+      //temp set vals with serial      
       // if (Serial.available()>=4) {
       //   String _ = Serial.readStringUntil('\n');
       //   mRVelDes = _.toFloat();
-      //   mLVelDes = mRVelDes;
+      //   mLVelDes = 0;
       // }
       //do rate limiting to cap target motor velocity if it changed too much
       attemptAccelL = (mLVelDes-mLVelDesLimit) / deltaTTraj; // compute attempted accelerations to check if we're gonna overtune
@@ -355,17 +374,57 @@ void loop(){
       pidR.Compute();
       leftMotorPower = round(leftMotorPowerDouble+KfVel*mLVelDesLimit); //also add feed forward
       rightMotorPower = round(rightMotorPowerDouble+KfVel*mRVelDesLimit);
+
       if ((timeMS-timeMS_old)>25) { 
         Serial2.print("<");
-        Serial2.print(mRVel);
+        Serial2.print(actualP.x,2);
         Serial2.print("\t");
-        Serial2.print(mRVelDes);
+        Serial2.print(actualP.y,2);
         Serial2.print("\t");
-        Serial2.print(deltaTTraj,8);
+        Serial2.print(actualP.theta,1);
+        Serial2.print("\t");
+        Serial2.print(PandVdes.p.x,2);
+        Serial2.print("\t");
+        Serial2.print(PandVdes.p.y,2);
+        Serial2.print("\t");
+        Serial2.print(PandVdes.p.theta,1);
         Serial2.print(">");
         timeMS_old = timeMS;
       }
       
+      // if ((timeMS-timeMS_old)>25) { 
+      //   //Serial2.print("<");
+      //   Serial.print(PandVdes.p.x,2);
+      //   Serial.print("\t");
+      //   Serial.print(PandVdes.p.y,2);
+      //   Serial.print("\t");
+      //   Serial.print(PandVdes.p.theta,1);
+      //   Serial.print("\t");
+      //   Serial.print(PandVdes.v,2);
+      //   Serial.print("\t");
+      //   Serial.print(PandVdes.w,2);
+      //   Serial.print("\t");
+      //   Serial.print("\t");
+      //   Serial.print(actualP.x,2);
+      //   Serial.print("\t");
+      //   Serial.print(actualP.y,2);
+      //   Serial.print("\t");
+      //   Serial.print(actualP.theta,1);
+      //   Serial.print("\t");
+      //   Serial.print(ramVdes,2);
+      //   Serial.print("\t");
+      //   Serial.print(ramWdes,2);
+      //   // Serial.print(mLVelDesLimit);
+      //   // Serial.print("\t");
+      //   // Serial.print(mRVelDesLimit);
+      //   // Serial.print("\t");
+      //   // Serial.print(mLVel,2);
+      //   // Serial.print("\t");
+      //   // Serial.print(mRVel,2);
+      //   Serial.println();//(">");
+      //   timeMS_old = timeMS;
+      // }
+
 
       //will set leftMotorPower and rightMotorPower
       break;
@@ -571,18 +630,14 @@ void loop(){
     //note odometry updates regardless of case
       if ((timeMS-timeMS_old)>250) { 
         //send start flag
-        Serial2.print('<');
-        Serial2.println("reading odometry results");
-        Serial2.print("x = ");
+        Serial2.print('<');;
         Serial2.print(actualP.x);
         Serial2.print('\t');
 
-        Serial2.print("y = ");
         Serial2.print(actualP.y);
         Serial2.print('\t');
 
-        Serial2.print("theta = ");
-        Serial2.println(actualP.theta);
+        Serial2.print(actualP.theta);
         //send end flag
         Serial2.print('>');
 

@@ -15,7 +15,7 @@ void GenTrajectory(void){
 
       //calcualate timeTrajStepFinish for the next step
       vNext = maxVel;
-      timeTrajStepFinish = abs(20.0/vNext); //for straight line distance/velocity
+      timeTrajStepFinish = abs(50.0/vNext); //for straight line distance/velocity
       break;
 
     //drive forward 20cm
@@ -23,7 +23,7 @@ void GenTrajectory(void){
       PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
 
       //end condition
-      if (timeTraj >= timeTrajStepFinish){
+      if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
         //calculate what position step finished at to feed to next step start time
         //recalculating at at the theorectical time avoids error propogating through the steps.
         PandVdes = GenStraight(timeTrajStepFinish, stepStartP, vNext);
@@ -34,9 +34,9 @@ void GenTrajectory(void){
         //set the time the next trajectory step starts
         timeTrajStepStart = timeTraj;
         //calcualate timeTrajStepFinish for the next step
-        arcRadiusNext = 20;
+        arcRadiusNext = -50.0;
         vNext = maxVel;
-        timeTrajStepFinish = abs(90.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
+        timeTrajStepFinish = abs(180.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
       break;
 
@@ -45,7 +45,7 @@ void GenTrajectory(void){
       PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
 
       //end condition
-      if (timeTraj >= timeTrajStepFinish){
+      if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
         //calculate what position step finished at to feed to next step start time
         //recalculating at at the theorectical time avoids error propogating through the steps.
         PandVdes = GenArc(timeTrajStepFinish, stepStartP, vNext, arcRadiusNext);
@@ -55,17 +55,61 @@ void GenTrajectory(void){
         
         //set the time the next trajectory step starts
         timeTrajStepStart = timeTraj;
+
         //calcualate timeTrajStepFinish for the next step
-        arcRadiusNext = 20;
         vNext = maxVel;
-        //will depend on what the next trajectory step is if there is any
-        //timeTrajStepFinish = timeTrajStepStart + abs(90.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
+        timeTrajStepFinish = abs(50.0/vNext); //for straight line distance/velocity
       }
       break;
 
-    case 3: // end of trajectory //uses the fact that traj step = 3 to signal that its finished the trajectory
-      PandVdes.v = 0;
-      PandVdes.w = 0;
+    case 3:
+      PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
+
+      //end condition
+      if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
+        //calculate what position step finished at to feed to next step start time
+        //recalculating at at the theorectical time avoids error propogating through the steps.
+        PandVdes = GenStraight(timeTrajStepFinish, stepStartP, vNext);
+        stepStartP = PandVdes.p;
+        
+        trajStep = trajStep + 1;
+        
+        //set the time the next trajectory step starts
+        timeTrajStepStart = timeTraj;
+        //calcualate timeTrajStepFinish for the next step
+        arcRadiusNext = -50.0;
+        vNext = maxVel;
+        timeTrajStepFinish = abs(180.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
+      }
+      break;
+
+    //turn in left in 90deg w rad of 20cm
+    case 4:
+      PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
+
+      //end condition
+      if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
+        //calculate what position step finished at to feed to next step start time
+        //recalculating at at the theorectical time avoids error propogating through the steps.
+        PandVdes = GenArc(timeTrajStepFinish, stepStartP, vNext, arcRadiusNext);
+        stepStartP = PandVdes.p;
+        
+        trajStep = trajStep + 1;
+        
+        //set the time the next trajectory step starts
+        timeTrajStepStart = timeTraj;
+
+        //put here if you want to stop
+        //set velocities to zero to stop
+        PandVdes.v = 0;
+        PandVdes.w = 0;
+      }
+      break;
+
+    //dont forget to update this number in main tab
+    case 5: // end of trajectory //uses the fact that traj step = 5 to signal that its finished the trajectory
+      //doesnt actualy get here
+      break;
     
     default:
       Serial.println("trajectory error, be woo be woo be woo");
@@ -97,7 +141,7 @@ PandV GenArc(double tLocal, Pose pInit, double vLocal, double rLocal){
   //tLocal = time (sec) since start of this specific line
   //pInit = initial position (at start of trajectory)
   //vLocal = speed of trajectory (center of robot) in whatever direciton its headed.
-  //double rLocal = radius of arc, positive is cetner point on right, negative is cp on left
+  //double rLocal = radius of arc, positive is center point on right, negative is cp on left
 
   //theta = 0 means positive x direction, theta = 90 means positive y direciton
   PandV PandVlocal;
@@ -107,12 +151,12 @@ PandV GenArc(double tLocal, Pose pInit, double vLocal, double rLocal){
   PandVlocal.w = (vLocal/rLocal)*180.0/pi;
 
   PandVlocal.p.theta = pInit.theta + PandVlocal.w*tLocal;
-  double relX = sin(vLocal/rLocal*tLocal);
-  double relY = cos(vLocal/rLocal*tLocal) - rLocal;
+  double relX = rLocal*sin(vLocal/rLocal*tLocal);
+  double relY = rLocal*cos(vLocal/rLocal*tLocal) - rLocal;
 
   //do rotation matrix and inital cord offsets
-  PandVlocal.p.x = pInit.x + relX * cos(PandVlocal.p.theta*pi/180.0) - relY * sin(PandVlocal.p.theta*pi/180.0);
-  PandVlocal.p.y = pInit.y + relX * sin(PandVlocal.p.theta*pi/180.0) + relY * cos(PandVlocal.p.theta*pi/180.0);
+  PandVlocal.p.x = pInit.x + relX * cos(pInit.theta*pi/180.0) + relY * sin(pInit.theta*pi/180.0);
+  PandVlocal.p.y = pInit.y - relX * sin(pInit.theta*pi/180.0) + relY * cos(pInit.theta*pi/180.0);
 
   return PandVlocal;
 }
