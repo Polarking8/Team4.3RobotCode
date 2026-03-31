@@ -145,7 +145,7 @@ struct PandV{ //struct to store all position and velocity vars needed to run ram
   double w;
 };
 
-double maxVel = 10; //cm/s //max vel of center of robot
+double maxVel = 25; //cm/s //max vel of center of robot
 double maxAccel = 100;//100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
 //will be updated during the trajectory following to the current theoretical (if it was following perfectly) x,y,theta, and velocities
 PandV PandVdes;
@@ -171,7 +171,7 @@ Pose errorP = { //error in the local frame of the robot (rotation matrix applied
   .theta = 0
 };
 //gains
-double ramB = 2.0/ pow(wheelSpacing,2); //proportional term for ramsete controller
+double ramB =2.0/ (wheelSpacing*wheelSpacing); //proportional term for ramsete controller
 double ramD = 0.7; //damping term of ramsete controller
 
 double ramK = 0; //intermediate gain value for ramsete conroller
@@ -336,7 +336,7 @@ void loop(){
           //escape once trajStep reaches the end
 //watch out for wrong traj step ending number.
   //yes I know this is defnitely a bad way to do this.
-          if (trajStep == 5){
+          if (trajStep == 6){
             state = state + 1;
           }
           break;
@@ -390,64 +390,64 @@ void loop(){
       leftMotorPower = round(leftMotorPowerDouble+KfVel*mLVelDesLimit); //also add feed forward
       rightMotorPower = round(rightMotorPowerDouble+KfVel*mRVelDesLimit);
 
-      // if ((timeMS-timeMS_old)>25) { 
-      //   Serial2.print("<");
-      //   Serial2.print(actualP.x,2);
-      //   Serial2.print("\t");
-      //   Serial2.print(actualP.y,2);
-      //   Serial2.print("\t");
-      //   Serial2.print(actualP.theta * 180.0/pi,1);
-      //   Serial2.print("\t");
-      //   Serial2.print(PandVdes.p.x,2);
-      //   Serial2.print("\t");
-      //   Serial2.print(PandVdes.p.y,2);
-      //   Serial2.print("\t");
-      //   Serial2.print(PandVdes.p.theta * 180.0/pi,1);
-      //   Serial2.print(">");
-      //   timeMS_old = timeMS;
-      // }
-      
       if ((timeMS-timeMS_old)>25) { 
-        //Serial2.print("<");
-        Serial.print(PandVdes.p.x,2);
-        Serial.print("\t");
-        Serial.print(PandVdes.p.y,2);
-        Serial.print("\t");
-        Serial.print(PandVdes.p.theta,2);
-        Serial.print("\t");
-        Serial.print(PandVdes.v,2);
-        Serial.print("\t");
-        Serial.print(PandVdes.w,2);
-        Serial.print("\t");
-        Serial.print("\t");
-        Serial.print(actualP.x,2);
-        Serial.print("\t");
-        Serial.print(actualP.y,2);
-        Serial.print("\t");
-        Serial.print(actualP.theta,2);
-        Serial.print("\t");
-        Serial.print(ramVdes,2);
-        Serial.print("\t");
-        Serial.print(ramWdes,2);
-        Serial.print("\t");
-        Serial.print("\t");
-        Serial.print(errorP.x,2);
-        Serial.print("\t");
-        Serial.print(errorP.y,2);
-        Serial.print("\t");
-        Serial.print(errorP.theta,2);
-        // Serial.print("\t");
-        // Serial.print("\t");
-        // Serial.print(mLVelDesLimit);
-        // Serial.print("\t");
-        // Serial.print(mRVelDesLimit);
-        // Serial.print("\t");
-        // Serial.print(mLVel,2);
-        // Serial.print("\t");
-        // Serial.print(mRVel,2);
-        Serial.println();//(">");
+        Serial2.print("<");
+        Serial2.print(actualP.x,2);
+        Serial2.print("\t");
+        Serial2.print(actualP.y,2);
+        Serial2.print("\t");
+        Serial2.print(actualP.theta * 180.0/pi,1);
+        Serial2.print("\t");
+        Serial2.print(PandVdes.p.x,2);
+        Serial2.print("\t");
+        Serial2.print(PandVdes.p.y,2);
+        Serial2.print("\t");
+        Serial2.print(PandVdes.p.theta * 180.0/pi,1);
+        Serial2.print(">");
         timeMS_old = timeMS;
       }
+      
+      // if ((timeMS-timeMS_old)>25) { 
+      //   //Serial2.print("<");
+      //   Serial.print(PandVdes.p.x,2);
+      //   Serial.print("\t");
+      //   Serial.print(PandVdes.p.y,2);
+      //   Serial.print("\t");
+      //   Serial.print(PandVdes.p.theta,2);
+      //   Serial.print("\t");
+      //   Serial.print(PandVdes.v,2);
+      //   Serial.print("\t");
+      //   Serial.print(PandVdes.w,2);
+      //   Serial.print("\t");
+      //   Serial.print("\t");
+      //   Serial.print(actualP.x,2);
+      //   Serial.print("\t");
+      //   Serial.print(actualP.y,2);
+      //   Serial.print("\t");
+      //   Serial.print(actualP.theta,2);
+      //   Serial.print("\t");
+      //   Serial.print(ramVdes,2);
+      //   Serial.print("\t");
+      //   Serial.print(ramWdes,2);
+      //   Serial.print("\t");
+      //   Serial.print("\t");
+      //   Serial.print(errorP.x,2);
+      //   Serial.print("\t");
+      //   Serial.print(errorP.y,2);
+      //   Serial.print("\t");
+      //   Serial.print(errorP.theta,2);
+      //   // Serial.print("\t");
+      //   // Serial.print("\t");
+      //   // Serial.print(mLVelDesLimit);
+      //   // Serial.print("\t");
+      //   // Serial.print(mRVelDesLimit);
+      //   // Serial.print("\t");
+      //   // Serial.print(mLVel,2);
+      //   // Serial.print("\t");
+      //   // Serial.print(mRVel,2);
+      //   Serial.println();//(">");
+      //   timeMS_old = timeMS;
+      // }
 
 
       //will set leftMotorPower and rightMotorPower
@@ -702,3 +702,10 @@ void loop(){
     //Set both to 0
   }
 }
+
+static double wrapPi(double a)
+    {
+        while (a >  pi) a -= 2.0 * pi;
+        while (a < -pi) a += 2.0 * pi;
+        return a;
+    }

@@ -34,7 +34,7 @@ void GenTrajectory(void){
         //set the time the next trajectory step starts
         timeTrajStepStart = timeTraj;
         //calcualate timeTrajStepFinish for the next step
-        arcRadiusNext = -50.0;
+        arcRadiusNext = -25.0;
         vNext = maxVel;
         timeTrajStepFinish = abs(180.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
@@ -77,7 +77,7 @@ void GenTrajectory(void){
         //set the time the next trajectory step starts
         timeTrajStepStart = timeTraj;
         //calcualate timeTrajStepFinish for the next step
-        arcRadiusNext = -50.0;
+        arcRadiusNext = -25.0;
         vNext = maxVel;
         timeTrajStepFinish = abs(180.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
@@ -99,6 +99,28 @@ void GenTrajectory(void){
         //set the time the next trajectory step starts
         timeTrajStepStart = timeTraj;
 
+        //calcualate timeTrajStepFinish for the next step
+        vNext = maxVel;
+        timeTrajStepFinish = abs(20.0/vNext); //for straight line distance/velocity
+        
+      }
+      break;
+    
+    case 5:
+      PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
+
+      //end condition
+      if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
+        //calculate what position step finished at to feed to next step start time
+        //recalculating at at the theorectical time avoids error propogating through the steps.
+        PandVdes = GenStraight(timeTrajStepFinish, stepStartP, vNext);
+        stepStartP = PandVdes.p;
+        
+        trajStep = trajStep + 1;
+        
+        //set the time the next trajectory step starts
+        timeTrajStepStart = timeTraj;
+        
         //put here if you want to stop
         //set velocities to zero to stop
         PandVdes.v = 0;
@@ -107,7 +129,7 @@ void GenTrajectory(void){
       break;
 
     //dont forget to update this number in main tab
-    case 5: // end of trajectory //uses the fact that traj step = 5 to signal that its finished the trajectory
+    case 6: // end of trajectory //uses the fact that traj step = 5 to signal that its finished the trajectory
       //doesnt actualy get here
       break;
     
@@ -141,7 +163,7 @@ PandV GenArc(double tLocal, Pose pInit, double vLocal, double rLocal){
   //tLocal = time (sec) since start of this specific line
   //pInit = initial position (at start of trajectory)
   //vLocal = speed of trajectory (center of robot) in whatever direciton its headed.
-  //double rLocal = radius of arc, positive is center point on right, negative is cp on left
+  //double rLocal = radius of arc, positive is center point on left, negative is cp on right
 
   //theta = 0 means positive x direction, theta = 90 means positive y direciton
   PandV PandVlocal;
@@ -152,7 +174,7 @@ PandV GenArc(double tLocal, Pose pInit, double vLocal, double rLocal){
 
   PandVlocal.p.theta = pInit.theta + PandVlocal.w*tLocal;
   double relX = rLocal*sin(vLocal/rLocal*tLocal);
-  double relY = rLocal*cos(vLocal/rLocal*tLocal) - rLocal;
+  double relY = -rLocal*cos(vLocal/rLocal*tLocal) + rLocal;
 
   //do rotation matrix and inital cord offsets
   PandVlocal.p.x = pInit.x + relX * cos(pInit.theta) + relY * sin(pInit.theta);
