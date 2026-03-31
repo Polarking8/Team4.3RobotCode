@@ -130,8 +130,8 @@ PandV GenStraight(double tLocal, Pose pInit, double vLocal){
   PandVlocal.v = vLocal;
   PandVlocal.w = 0;
 
-  PandVlocal.p.x = pInit.x + tLocal*vLocal*cos(pInit.theta/180*pi);
-  PandVlocal.p.y = pInit.y + tLocal*vLocal*sin(pInit.theta/180*pi);
+  PandVlocal.p.x = pInit.x + tLocal*vLocal*cos(pInit.theta);
+  PandVlocal.p.y = pInit.y + tLocal*vLocal*sin(pInit.theta);
 
   return PandVlocal;
 }
@@ -148,15 +148,15 @@ PandV GenArc(double tLocal, Pose pInit, double vLocal, double rLocal){
   //set vals for the stuff that doesnt change
   PandVlocal.v = vLocal;
   // w is independent of time
-  PandVlocal.w = (vLocal/rLocal)*180.0/pi;
+  PandVlocal.w = vLocal/rLocal;
 
   PandVlocal.p.theta = pInit.theta + PandVlocal.w*tLocal;
   double relX = rLocal*sin(vLocal/rLocal*tLocal);
   double relY = rLocal*cos(vLocal/rLocal*tLocal) - rLocal;
 
   //do rotation matrix and inital cord offsets
-  PandVlocal.p.x = pInit.x + relX * cos(pInit.theta*pi/180.0) + relY * sin(pInit.theta*pi/180.0);
-  PandVlocal.p.y = pInit.y - relX * sin(pInit.theta*pi/180.0) + relY * cos(pInit.theta*pi/180.0);
+  PandVlocal.p.x = pInit.x + relX * cos(pInit.theta) + relY * sin(pInit.theta);
+  PandVlocal.p.y = pInit.y - relX * sin(pInit.theta) + relY * cos(pInit.theta);
 
   return PandVlocal;
 }

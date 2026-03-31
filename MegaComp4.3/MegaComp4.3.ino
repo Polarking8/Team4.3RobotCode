@@ -79,12 +79,14 @@ unsigned long timeMS_old = 0;
 unsigned long timeMSpusher_old = 0; //update time old only after performing a print
 
 //micros timer for real time and pid applications
+double time = 0;
 double timeTraj = 0; //time in seconds relative to trajectory start
-double timeTrajOld = 0; //one loop old time in seconds relative to traj start
-double deltaTTraj = 0; //time the last whole loop took
 double timeTrajStart = 0;
 double timeTrajStepStart = 0; //time from when overall trajectory started to when traj step started
 double timeTrajStepFinish = 0; //time trajectory step will finish at, relative to start of trajectory step
+
+double timeOld = 0; //micros timer for loop duration finding
+double deltaT = 0; //time the last whole loop took
 
 //state machine variables
 int state = 0; // main state machine controll variable
@@ -124,7 +126,7 @@ double mRVelDesLimit = 0; // rate limiters
 
 //RAM-SETE variables + PID initialization
 double KfVel = 7.5;
-double KpVel = 15; // Proportional Gain
+double KpVel = 0;//15; // Proportional Gain
 double KiVel = 0; // Integral 
 double KdVel = 0; // Derivative
 PID pidL(&mLVel, &leftMotorPowerDouble, &mLVelDesLimit, KpVel, KiVel, KdVel, DIRECT);
@@ -143,8 +145,8 @@ struct PandV{ //struct to store all position and velocity vars needed to run ram
   double w;
 };
 
-float maxVel = 10; //cm/s //max vel of center of robot
-float maxAccel = 100;//100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
+double maxVel = 10; //cm/s //max vel of center of robot
+double maxAccel = 100000;//100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
 //will be updated during the trajectory following to the current theoretical (if it was following perfectly) x,y,theta, and velocities
 PandV PandVdes;
 int trajStep = 0;
@@ -169,7 +171,7 @@ Pose errorP = { //error in the local frame of the robot (rotation matrix applied
   .theta = 0
 };
 //gains
-double ramB = 2; //proportional term for ramsete controller
+double ramB = 2/ pow(wheelSpacing,2); //proportional term for ramsete controller
 double ramD = 0.7; //damping term of ramsete controller
 
 double ramK = 0; //intermediate gain value for ramsete conroller
@@ -228,10 +230,11 @@ void setup(){
   //initialize timers
   timeMS = millis();
   timeMS_old = timeMS;
-  timeTrajStart = micros() / 1000000.0;
-  timeTraj = micros() / 1000000.0 - timeTrajStart;
-  timeTrajOld = timeTraj;
-  deltaTTraj = 0;
+  time = micros() / 1000000.0;
+  timeTrajStart = time;
+  timeTraj = time - timeTrajStart;
+  timeOld = time;
+  deltaT = 0;
 
   md.init();
   md.enableDrivers();
@@ -264,10 +267,10 @@ void loop(){
   
   //update timers
   timeMS = millis();
-
-  timeTrajOld = timeTraj;
-  timeTraj = micros() / 1000000.0 - timeTrajStart;
-  deltaTTraj = timeTraj-timeTrajOld;
+  time = micros() / 1000000.0;
+  timeTraj = time - timeTrajStart;
+  deltaT = time - timeOld;
+  timeOld = time;
   //update odometry this does all the encoder reading internaly
   OdoUpdate();
   
@@ -311,12 +314,24 @@ void loop(){
           trajStep = 0;
           //reset actaul position
           actualP = initialP;
+          mRVel = 0;
+          mRVelDes = 0;
+          mRVelDesLimit = 0;
+          mLVel = 0;
+          mLVelDes = 0;
+          mLVelDesLimit = 0;
+          errorP = { //error in the local frame of the robot (rotation matrix applied)
+            .x = 0,
+            .y = 0,
+            .theta = 0
+          };
+
           state = state+1;
           break;
 
         case 1: //while running traj
           //update trajectory command
-          GenTrajectory(); //updates PandVdes to follow the trajectory
+          //GenTrajectory(); //updates PandVdes to follow the trajectory
 
           //escape once trajStep reaches the end
 //watch out for wrong traj step ending number.
@@ -345,26 +360,26 @@ void loop(){
       //   timeMSpusher_old = timeMS;
       // }
       
-      //temp set vals with serial      
+      // //temp set vals with serial      
       // if (Serial.available()>=4) {
       //   String _ = Serial.readStringUntil('\n');
       //   mRVelDes = _.toFloat();
-      //   mLVelDes = 0;
+      //   mLVelDes = mRVelDes;
       // }
       //do rate limiting to cap target motor velocity if it changed too much
-      attemptAccelL = (mLVelDes-mLVelDesLimit) / deltaTTraj; // compute attempted accelerations to check if we're gonna overtune
-      attemptAccelR = (mRVelDes-mRVelDesLimit) / deltaTTraj;
+      attemptAccelL = (mLVelDes-mLVelDesLimit) / deltaT; // compute attempted accelerations to check if we're gonna overtune
+      attemptAccelR = (mRVelDes-mRVelDesLimit) / deltaT;
       if (attemptAccelL > maxAccel){
-        mLVelDesLimit = mLVelDesLimit + (maxAccel*deltaTTraj);
+        mLVelDesLimit = mLVelDesLimit + (maxAccel*deltaT);
       }else if (attemptAccelL < -1*maxAccel){
-        mLVelDesLimit = mLVelDesLimit - (maxAccel*deltaTTraj);
+        mLVelDesLimit = mLVelDesLimit - (maxAccel*deltaT);
       }else{
         mLVelDesLimit = mLVelDes;
       }
       if (attemptAccelR > maxAccel){
-        mRVelDesLimit = mRVelDesLimit + (maxAccel*deltaTTraj);
+        mRVelDesLimit = mRVelDesLimit + (maxAccel*deltaT);
       }else if (attemptAccelR < -1*maxAccel){
-        mRVelDesLimit = mRVelDesLimit - (maxAccel*deltaTTraj);
+        mRVelDesLimit = mRVelDesLimit - (maxAccel*deltaT);
       }else{
         mRVelDesLimit = mRVelDes;
       }
@@ -375,55 +390,64 @@ void loop(){
       leftMotorPower = round(leftMotorPowerDouble+KfVel*mLVelDesLimit); //also add feed forward
       rightMotorPower = round(rightMotorPowerDouble+KfVel*mRVelDesLimit);
 
-      if ((timeMS-timeMS_old)>25) { 
-        Serial2.print("<");
-        Serial2.print(actualP.x,2);
-        Serial2.print("\t");
-        Serial2.print(actualP.y,2);
-        Serial2.print("\t");
-        Serial2.print(actualP.theta,1);
-        Serial2.print("\t");
-        Serial2.print(PandVdes.p.x,2);
-        Serial2.print("\t");
-        Serial2.print(PandVdes.p.y,2);
-        Serial2.print("\t");
-        Serial2.print(PandVdes.p.theta,1);
-        Serial2.print(">");
-        timeMS_old = timeMS;
-      }
-      
       // if ((timeMS-timeMS_old)>25) { 
-      //   //Serial2.print("<");
-      //   Serial.print(PandVdes.p.x,2);
-      //   Serial.print("\t");
-      //   Serial.print(PandVdes.p.y,2);
-      //   Serial.print("\t");
-      //   Serial.print(PandVdes.p.theta,1);
-      //   Serial.print("\t");
-      //   Serial.print(PandVdes.v,2);
-      //   Serial.print("\t");
-      //   Serial.print(PandVdes.w,2);
-      //   Serial.print("\t");
-      //   Serial.print("\t");
-      //   Serial.print(actualP.x,2);
-      //   Serial.print("\t");
-      //   Serial.print(actualP.y,2);
-      //   Serial.print("\t");
-      //   Serial.print(actualP.theta,1);
-      //   Serial.print("\t");
-      //   Serial.print(ramVdes,2);
-      //   Serial.print("\t");
-      //   Serial.print(ramWdes,2);
-      //   // Serial.print(mLVelDesLimit);
-      //   // Serial.print("\t");
-      //   // Serial.print(mRVelDesLimit);
-      //   // Serial.print("\t");
-      //   // Serial.print(mLVel,2);
-      //   // Serial.print("\t");
-      //   // Serial.print(mRVel,2);
-      //   Serial.println();//(">");
+      //   Serial2.print("<");
+      //   Serial2.print(actualP.x,2);
+      //   Serial2.print("\t");
+      //   Serial2.print(actualP.y,2);
+      //   Serial2.print("\t");
+      //   Serial2.print(actualP.theta * 180.0/pi,1);
+      //   Serial2.print("\t");
+      //   Serial2.print(PandVdes.p.x,2);
+      //   Serial2.print("\t");
+      //   Serial2.print(PandVdes.p.y,2);
+      //   Serial2.print("\t");
+      //   Serial2.print(PandVdes.p.theta * 180.0/pi,1);
+      //   Serial2.print(">");
       //   timeMS_old = timeMS;
       // }
+      
+      if ((timeMS-timeMS_old)>25) { 
+        //Serial2.print("<");
+        Serial.print(PandVdes.p.x,2);
+        Serial.print("\t");
+        Serial.print(PandVdes.p.y,2);
+        Serial.print("\t");
+        Serial.print(PandVdes.p.theta,2);
+        Serial.print("\t");
+        Serial.print(PandVdes.v,2);
+        Serial.print("\t");
+        Serial.print(PandVdes.w,2);
+        Serial.print("\t");
+        Serial.print("\t");
+        Serial.print(actualP.x,2);
+        Serial.print("\t");
+        Serial.print(actualP.y,2);
+        Serial.print("\t");
+        Serial.print(actualP.theta,2);
+        Serial.print("\t");
+        Serial.print(ramVdes,2);
+        Serial.print("\t");
+        Serial.print(ramWdes,2);
+        Serial.print("\t");
+        Serial.print("\t");
+        Serial.print(errorP.x,2);
+        Serial.print("\t");
+        Serial.print(errorP.y,2);
+        Serial.print("\t");
+        Serial.print(errorP.theta,2);
+        // Serial.print("\t");
+        // Serial.print("\t");
+        // Serial.print(mLVelDesLimit);
+        // Serial.print("\t");
+        // Serial.print(mRVelDesLimit);
+        // Serial.print("\t");
+        // Serial.print(mLVel,2);
+        // Serial.print("\t");
+        // Serial.print(mRVel,2);
+        Serial.println();//(">");
+        timeMS_old = timeMS;
+      }
 
 
       //will set leftMotorPower and rightMotorPower
@@ -453,7 +477,7 @@ void loop(){
     //R = reset odometry to initial coordinates
     //etc.
     case 'x': // stop all
-      Serial.println("Stopping everything");
+      //Serial.println("Stopping everything");
       leftMotorPower = 0;
       rightMotorPower = 0;
       conveyorPower = 0;
@@ -637,7 +661,7 @@ void loop(){
         Serial2.print(actualP.y);
         Serial2.print('\t');
 
-        Serial2.print(actualP.theta);
+        Serial2.print(actualP.theta* 180.0/pi);
         //send end flag
         Serial2.print('>');
 
