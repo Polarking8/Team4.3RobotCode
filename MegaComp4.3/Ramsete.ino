@@ -6,17 +6,20 @@ void Ramsete(void){
   errorP.theta = PandVdes.p.theta - actualP.theta;
 
   //calculate gain ramK
-  ramK = 2.0 * ramD * pow((pow(PandVdes.w, 2.0)+ramB*pow(PandVdes.v, 2.0)), (1/2));
+  ramK = 2.0 * ramD * sqrt(PandVdes.w*PandVdes.w+ramB*PandVdes.v*PandVdes.v);
 
   //calculate robot velocities
-  //deal with discontenouity when errorP.theta = 0;
-  if (errorP.theta == 0){
-    errorP.theta = 0.000001;
-  }
   ramVdes = PandVdes.v * cos(errorP.theta) + ramK * errorP.x;
-  ramWdes = PandVdes.w + ramK*errorP.theta + (ramB*PandVdes.v*sin(errorP.theta)*errorP.y)/errorP.theta;
+  ramWdes = PandVdes.w + ramK*errorP.theta + ramB*PandVdes.v*sinc(errorP.theta)*errorP.y;
 
   mLVelDes = ramVdes + ramWdes * wheelSpacing/2.0;
   mRVelDes = ramVdes - ramWdes * wheelSpacing/2.0;
 
+}
+
+//stolen from chris (thanks)
+// sinc(x) = sin(x)/x, with a Taylor series for small x to avoid division by zero
+static double sinc(double x)
+{
+    return fabsf(x) < 1e-4d ? 1.0d - x * x / 6.0d : sin(x) / x;
 }

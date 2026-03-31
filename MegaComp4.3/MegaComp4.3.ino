@@ -126,7 +126,7 @@ double mRVelDesLimit = 0; // rate limiters
 
 //RAM-SETE variables + PID initialization
 double KfVel = 7.5;
-double KpVel = 0;//15; // Proportional Gain
+double KpVel = 15; // Proportional Gain
 double KiVel = 0; // Integral 
 double KdVel = 0; // Derivative
 PID pidL(&mLVel, &leftMotorPowerDouble, &mLVelDesLimit, KpVel, KiVel, KdVel, DIRECT);
@@ -146,7 +146,7 @@ struct PandV{ //struct to store all position and velocity vars needed to run ram
 };
 
 double maxVel = 10; //cm/s //max vel of center of robot
-double maxAccel = 100000;//100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
+double maxAccel = 100;//100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
 //will be updated during the trajectory following to the current theoretical (if it was following perfectly) x,y,theta, and velocities
 PandV PandVdes;
 int trajStep = 0;
@@ -171,7 +171,7 @@ Pose errorP = { //error in the local frame of the robot (rotation matrix applied
   .theta = 0
 };
 //gains
-double ramB = 2/ pow(wheelSpacing,2); //proportional term for ramsete controller
+double ramB = 2.0/ pow(wheelSpacing,2); //proportional term for ramsete controller
 double ramD = 0.7; //damping term of ramsete controller
 
 double ramK = 0; //intermediate gain value for ramsete conroller
@@ -331,7 +331,7 @@ void loop(){
 
         case 1: //while running traj
           //update trajectory command
-          //GenTrajectory(); //updates PandVdes to follow the trajectory
+          GenTrajectory(); //updates PandVdes to follow the trajectory
 
           //escape once trajStep reaches the end
 //watch out for wrong traj step ending number.
