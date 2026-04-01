@@ -295,20 +295,29 @@ void loop(){
       switch (state) {
         case 0: //start traj
           trajStep = 0;
-          state = state+1;
+          state = state + 1;
           break;
-
         case 1: //while running traj
           //update trajectory command
           GenTrajectory(); //updates PandVdes to follow the trajectory
 
           //escape once trajStep reaches the end
-//watch out for wrong traj step ending number.
-  //yes I know this is defnitely a bad way to do this.
+          //watch out for wrong traj step ending number.
+          //yes I know this is defnitely a bad way to do this.
           if (trajStep == 3){
             state = state + 1;
           }
           break;
+          // 3/31/26 code for line following @ the end 
+          if(trajStep == 4){ // figure out correct flag var instead of trajStep = 4, I am not sure this will work since trajstep will never go above 3
+            //Pseudocode 
+            //if distance to wall > (flag number, probably for 2cm or so)
+            // stop, turn
+            //else
+            //Line follow forward (towards tower)
+            //
+          }
+
 
         default:
           break;
