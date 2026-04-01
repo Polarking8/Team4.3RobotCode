@@ -145,16 +145,18 @@ struct PandV{ //struct to store all position and velocity vars needed to run ram
   double w;
 };
 
-double maxVel = 25; //cm/s //max vel of center of robot
+double maxVel = 5;//25; //cm/s //max vel of center of robot
 double maxAccel = 100;//100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
 //will be updated during the trajectory following to the current theoretical (if it was following perfectly) x,y,theta, and velocities
 PandV PandVdes;
 int trajStep = 0;
+bool followingLine = false;
 Pose initialP = {
-  .x = 0,
-  .y = 0,
-  .theta = 0
+  .x = 4.445, //1.75in (up against back wall)
+  .y = 15.24, //6in (centered in channel)
+  .theta = 0 //pointing out of chanenl
 };
+
 Pose stepStartP = initialP;
 
 double arcRadiusNext = 0; //occasionaly used variable for the arc radius of the upcoming trajectory step
@@ -193,7 +195,9 @@ double lineSensorPositions[lineSensorCount] = {0.0, 0.8, 1.6, 2.4, 3.2, 4.0, 4.8
 uint16_t lineSensorValuesUnbiased[lineSensorCount];
 double lineAi = 0; //total sensor readings
 double lineAid = 0; //sensor readings weighted for distance
+bool onLine = false; //true if is over the line and reading is valid
 double linePosition = 0; //where the line is relative to the center of the sensor in cm
+double linePositionDes = 2.8;//2.8 = center of sensor
 
 //Color Sensor Vars
 const int colorNumSamples = 8;
@@ -336,7 +340,7 @@ void loop(){
           //escape once trajStep reaches the end
 //watch out for wrong traj step ending number.
   //yes I know this is defnitely a bad way to do this.
-          if (trajStep == 2){
+          if (trajStep == 8){
             state = state + 1;
           }
           break;
@@ -346,7 +350,13 @@ void loop(){
       }
       //do ramsete to calculate target motor velocity
       //sets mLVelDes, and mLVelDes
-      Ramsete();
+      if (followingLine){
+        //put code to find mLVelDes and mRVelDes based on line position.
+      } else{
+        //calulate velocities with ramsete only if not line following
+        Ramsete();
+      }
+      
 
 
       //temp manualy set values
@@ -403,6 +413,8 @@ void loop(){
         Serial2.print(PandVdes.p.y,2);
         Serial2.print("\t");
         Serial2.print(PandVdes.p.theta,3);
+        Serial2.print("\t");
+        Serial2.print(trajStep);
         Serial2.print(">");
         timeMS_old = timeMS;
       }
@@ -578,6 +590,10 @@ void loop(){
     case 'i': // Read distance sensor val 
       readDistanceSensor(); //function saves to global distVal
       if ((timeMS-timeMS_old)>50) { 
+        Serial2.print("<");
+        Serial2.print(distVal);
+        Serial2.print(">");
+
         Serial.println("reading distance sensor");
         Serial.println(distVal);
         //Serial.println();

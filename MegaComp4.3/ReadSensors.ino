@@ -1,6 +1,6 @@
 void readDistanceSensor(){
   // code to read the distance sensor and apply filtering and linearization
-  distVal = analogRead(DistanceSensor);
+  distVal = analogRead(DistanceSensor) * 0.1 + distVal*(0.9); //iir filter the readings alpha = 0.1 now
   //add stuff to filter and do linearization
 }
 
@@ -45,9 +45,12 @@ void readReflectanceSensor(){
   //if lineAi = 0 it will cause a divide by zero error and break the code. Fix this by if lineAi = 0 set to very small number
   if (lineAi == 0){
     lineAi = 0.1;
+    onLine = false;
     //can also use this as a line detection validity, if Ai = 0 or is very small there probably isnt a line in sight and value isnt valid;
+  } else{
+    onLine = true;
   }
-  linePosition = lineAid/lineAi-2.8; //-2.8 to put 0 in center of sensor
+  linePosition = lineAid/lineAi; //0 is left side of sensor
 
   //Serial.print(lineAid); //more optional telemetry
   //Serial.print('\t');
