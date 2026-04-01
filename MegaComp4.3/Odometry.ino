@@ -1,3 +1,5 @@
+
+
 void OdoUpdate(){
   // Fudge factor to make distances more accurate
   double distanceFudgeFactor = 1.023;
@@ -14,15 +16,18 @@ void OdoUpdate(){
   mLPos = encoderL.read() * 0.005890486 * distanceFudgeFactor; 
   
   //Calculate theta
-  actualP.theta = actualP.theta + (mRPos-mRPosLast-mLPos+mLPosLast)/wheelSpacing/pi*180.0; //this will need calibration
-  
+  actualP.theta = actualP.theta + (mRPos-mRPosLast-mLPos+mLPosLast)/wheelSpacing; //this will need calibration
+  //wrap theta
+  actualP.theta = wrapPi(actualP.theta);
+
   //calculate new xy cords
   //calculate distance moved forward in the last cycle (average of change in both encoder positions)
   distanceMoved = ((mRPos-mRPosLast)+(mLPos-mLPosLast))/2.0;
   //rotation matrix that with current theta to find offset from old position.
-  actualP.x = actualP.x + distanceMoved*cos(actualP.theta*pi/180.0); // find delta x with polar to cartesian conversion
-  actualP.y = actualP.y + distanceMoved*sin(actualP.theta*pi/180.0);
+  actualP.x = actualP.x + distanceMoved*cos(actualP.theta); // find delta x with polar to cartesian conversion
+  actualP.y = actualP.y + distanceMoved*sin(actualP.theta);
 
-  mRVel = (mRPos-mRPosLast)/deltaTTraj*alpha+mRVel*(1.0-alpha); // velocity, in cm/s 
-  mLVel = (mLPos-mLPosLast)/deltaTTraj*alpha+mRVel*(1.0-alpha); 
+  mRVel = (mRPos-mRPosLast)/deltaT*alpha+mRVel*(1.0-alpha); // velocity, in cm/s 
+  mLVel = (mLPos-mLPosLast)/deltaT*alpha+mLVel*(1.0-alpha); 
 }
+
