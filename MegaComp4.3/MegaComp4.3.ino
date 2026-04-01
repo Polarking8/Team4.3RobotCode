@@ -160,7 +160,7 @@ Pose stepStartP = initialP;
 double arcRadiusNext = 0; //occasionaly used variable for the arc radius of the upcoming trajectory step
 double vNext = 0; //used to remember what the velocity will be for the current step.
 //navigation vars
-double wheelSpacing = 25.54; //wheel spacing
+double wheelSpacing = 25.54*1.02065; //wheel spacing
 //starting position of robot
 Pose actualP = initialP;
 
@@ -336,7 +336,7 @@ void loop(){
           //escape once trajStep reaches the end
 //watch out for wrong traj step ending number.
   //yes I know this is defnitely a bad way to do this.
-          if (trajStep == 6){
+          if (trajStep == 2){
             state = state + 1;
           }
           break;
@@ -396,13 +396,13 @@ void loop(){
         Serial2.print("\t");
         Serial2.print(actualP.y,2);
         Serial2.print("\t");
-        Serial2.print(actualP.theta * 180.0/pi,1);
+        Serial2.print(actualP.theta,3);
         Serial2.print("\t");
         Serial2.print(PandVdes.p.x,2);
         Serial2.print("\t");
         Serial2.print(PandVdes.p.y,2);
         Serial2.print("\t");
-        Serial2.print(PandVdes.p.theta * 180.0/pi,1);
+        Serial2.print(PandVdes.p.theta,3);
         Serial2.print(">");
         timeMS_old = timeMS;
       }
@@ -705,7 +705,7 @@ void loop(){
 
 static double wrapPi(double a)
     {
-        while (a >  pi) a -= 2.0 * pi;
-        while (a < -pi) a += 2.0 * pi;
+        //while (a >  pi) a -= 2.0 * pi;
+        //while (a < -pi) a += 2.0 * pi;
         return a;
     }

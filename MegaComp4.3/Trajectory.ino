@@ -13,35 +13,40 @@ void GenTrajectory(void){
       stepStartP = initialP;
       trajStep = trajStep + 1;
 
+      // //calcualate timeTrajStepFinish for the next step
+      // vNext = maxVel;
+      // timeTrajStepFinish = abs(10.0/vNext); //for straight line distance/velocity
+
       //calcualate timeTrajStepFinish for the next step
-      vNext = maxVel;
-      timeTrajStepFinish = abs(50.0/vNext); //for straight line distance/velocity
+      arcRadiusNext = -15.0;
+      vNext = 10.0;
+      timeTrajStepFinish = abs(360.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       break;
 
-    //drive forward 20cm
+    //drive forward 100cm
+    // case 1:
+    //   PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
+
+    //   //end condition
+    //   if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
+    //     //calculate what position step finished at to feed to next step start time
+    //     //recalculating at at the theorectical time avoids error propogating through the steps.
+    //     PandVdes = GenStraight(timeTrajStepFinish, stepStartP, vNext);
+    //     stepStartP = PandVdes.p;
+        
+    //     trajStep = trajStep + 1;
+        
+    //     //set the time the next trajectory step starts
+    //     timeTrajStepStart = timeTraj;
+    //     //calcualate timeTrajStepFinish for the next step
+    //     arcRadiusNext = -15.0;
+    //     vNext = 10.0;
+    //     timeTrajStepFinish = abs(180.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
+    //   }
+    //   break;
+
+    //turn in left in 90deg w rad of 15cm
     case 1:
-      PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
-
-      //end condition
-      if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
-        //calculate what position step finished at to feed to next step start time
-        //recalculating at at the theorectical time avoids error propogating through the steps.
-        PandVdes = GenStraight(timeTrajStepFinish, stepStartP, vNext);
-        stepStartP = PandVdes.p;
-        
-        trajStep = trajStep + 1;
-        
-        //set the time the next trajectory step starts
-        timeTrajStepStart = timeTraj;
-        //calcualate timeTrajStepFinish for the next step
-        arcRadiusNext = -25.0;
-        vNext = maxVel;
-        timeTrajStepFinish = abs(180.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
-      }
-      break;
-
-    //turn in left in 90deg w rad of 20cm
-    case 2:
       PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
 
       //end condition
@@ -57,69 +62,69 @@ void GenTrajectory(void){
         timeTrajStepStart = timeTraj;
 
         //calcualate timeTrajStepFinish for the next step
-        vNext = maxVel;
-        timeTrajStepFinish = abs(50.0/vNext); //for straight line distance/velocity
-      }
-      break;
+    //     vNext = maxVel;
+    //     timeTrajStepFinish = abs(10.0/vNext); //for straight line distance/velocity
+    //   }
+    //   break;
 
-    case 3:
-      PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
+    // case 3:
+    //   PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
 
-      //end condition
-      if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
-        //calculate what position step finished at to feed to next step start time
-        //recalculating at at the theorectical time avoids error propogating through the steps.
-        PandVdes = GenStraight(timeTrajStepFinish, stepStartP, vNext);
-        stepStartP = PandVdes.p;
+    //   //end condition
+    //   if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
+    //     //calculate what position step finished at to feed to next step start time
+    //     //recalculating at at the theorectical time avoids error propogating through the steps.
+    //     PandVdes = GenStraight(timeTrajStepFinish, stepStartP, vNext);
+    //     stepStartP = PandVdes.p;
         
-        trajStep = trajStep + 1;
+    //     trajStep = trajStep + 1;
         
-        //set the time the next trajectory step starts
-        timeTrajStepStart = timeTraj;
-        //calcualate timeTrajStepFinish for the next step
-        arcRadiusNext = -25.0;
-        vNext = maxVel;
-        timeTrajStepFinish = abs(180.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
-      }
-      break;
+    //     //set the time the next trajectory step starts
+    //     timeTrajStepStart = timeTraj;
+    //     //calcualate timeTrajStepFinish for the next step
+    //     arcRadiusNext = -25.0;
+    //     vNext = maxVel;
+    //     timeTrajStepFinish = abs(180.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
+    //   }
+    //   break;
 
-    //turn in left in 90deg w rad of 20cm
-    case 4:
-      PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
+    // //turn in left in 90deg w rad of 20cm
+    // case 4:
+    //   PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
 
-      //end condition
-      if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
-        //calculate what position step finished at to feed to next step start time
-        //recalculating at at the theorectical time avoids error propogating through the steps.
-        PandVdes = GenArc(timeTrajStepFinish, stepStartP, vNext, arcRadiusNext);
-        stepStartP = PandVdes.p;
+    //   //end condition
+    //   if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
+    //     //calculate what position step finished at to feed to next step start time
+    //     //recalculating at at the theorectical time avoids error propogating through the steps.
+    //     PandVdes = GenArc(timeTrajStepFinish, stepStartP, vNext, arcRadiusNext);
+    //     stepStartP = PandVdes.p;
         
-        trajStep = trajStep + 1;
+    //     trajStep = trajStep + 1;
         
-        //set the time the next trajectory step starts
-        timeTrajStepStart = timeTraj;
+    //     //set the time the next trajectory step starts
+    //     timeTrajStepStart = timeTraj;
 
-        //calcualate timeTrajStepFinish for the next step
-        vNext = maxVel;
-        timeTrajStepFinish = abs(20.0/vNext); //for straight line distance/velocity
+    //     //calcualate timeTrajStepFinish for the next step
+    //     vNext = maxVel;
+    //     timeTrajStepFinish = abs(20.0/vNext); //for straight line distance/velocity
         
-      }
-      break;
+    //   }
+    //   break;
     
-    case 5:
-      PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
+    // case 5:
+    //   PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
 
-      //end condition
-      if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
-        //calculate what position step finished at to feed to next step start time
-        //recalculating at at the theorectical time avoids error propogating through the steps.
-        PandVdes = GenStraight(timeTrajStepFinish, stepStartP, vNext);
-        stepStartP = PandVdes.p;
+    //   //end condition
+    //   if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
+    //     //calculate what position step finished at to feed to next step start time
+    //     //recalculating at at the theorectical time avoids error propogating through the steps.
+    //     PandVdes = GenStraight(timeTrajStepFinish, stepStartP, vNext);
+    //     stepStartP = PandVdes.p;
         
-        trajStep = trajStep + 1;
+    //     trajStep = trajStep + 1;
         
-        //set the time the next trajectory step starts
-        timeTrajStepStart = timeTraj;
+    //     //set the time the next trajectory step starts
+    //     timeTrajStepStart = timeTraj;
         
         //put here if you want to stop
         //set velocities to zero to stop
@@ -129,7 +134,7 @@ void GenTrajectory(void){
       break;
 
     //dont forget to update this number in main tab
-    case 6: // end of trajectory //uses the fact that traj step = 5 to signal that its finished the trajectory
+    case 2: // end of trajectory //uses the fact that traj step = 5 to signal that its finished the trajectory
       //doesnt actualy get here
       break;
     

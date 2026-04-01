@@ -2,7 +2,7 @@
 
 void OdoUpdate(){
   // Fudge factor to make distances more accurate
-  double distanceFudgeFactor = 1.023;
+  double distanceFudgeFactor = 0.9907;
   
   //reads the encoders and performs math to update
   //sets global x, y, theta variables
