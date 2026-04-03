@@ -230,8 +230,8 @@ PandV GenArc(double tLocal, Pose pInit, double vLocal, double rLocal){
   double relY = -rLocal*cos(vLocal/rLocal*tLocal) + rLocal;
 
   //do rotation matrix and inital cord offsets
-  PandVlocal.p.x = pInit.x + relX * cos(pInit.theta) + relY * sin(pInit.theta);
-  PandVlocal.p.y = pInit.y - relX * sin(pInit.theta) + relY * cos(pInit.theta);
+  PandVlocal.p.x = pInit.x + relX * cos(pInit.theta) - relY * sin(pInit.theta);
+  PandVlocal.p.y = pInit.y + relX * sin(pInit.theta) + relY * cos(pInit.theta);
 
   return PandVlocal;
 }

@@ -145,7 +145,7 @@ struct PandV{ //struct to store all position and velocity vars needed to run ram
   double w;
 };
 
-double maxVel = 5;//25; //cm/s //max vel of center of robot
+double maxVel = 25; //cm/s //max vel of center of robot
 double maxAccel = 100;//100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
 //will be updated during the trajectory following to the current theoretical (if it was following perfectly) x,y,theta, and velocities
 PandV PandVdes;
@@ -408,17 +408,23 @@ void loop(){
 
       if ((timeMS-timeMS_old)>25) { 
         Serial2.print("<");
-        Serial2.print(actualP.x,2);
+        Serial2.print(stepStartP.x,2);
         Serial2.print("\t");
-        Serial2.print(actualP.y,2);
+        Serial2.print(stepStartP.y,2);
         Serial2.print("\t");
-        Serial2.print(actualP.theta,3);
+        Serial2.print(stepStartP.theta*180.0/pi,3);
         Serial2.print("\t");
         Serial2.print(PandVdes.p.x,2);
         Serial2.print("\t");
         Serial2.print(PandVdes.p.y,2);
         Serial2.print("\t");
-        Serial2.print(PandVdes.p.theta,3);
+        Serial2.print(PandVdes.p.theta*180.0/pi,3);
+        Serial2.print("\t");
+        Serial2.print(PandVdes.v,2);
+        Serial2.print("\t");
+        Serial2.print(PandVdes.w,2);
+        Serial2.print("\t");
+        Serial2.print(timeTraj-timeTrajStepStart,2);
         Serial2.print("\t");
         Serial2.print(trajStep);
         Serial2.print(">");
