@@ -199,6 +199,7 @@ bool onLine = false; //true if is over the line and reading is valid
 double linePosition = 0; //where the line is relative to the center of the sensor in cm
 double linePositionDes = 2.8;//2.8 = center of sensor
 double lineError = 0;
+double lineKp = 1;
 
 //Color Sensor Vars
 const int colorNumSamples = 8;
@@ -353,27 +354,10 @@ void loop(){
       //sets mLVelDes, and mLVelDes
       if (followingLine){
         //put code to find mLVelDes and mRVelDes based on line position.
-        qtr.read(sensor_Values);
-        for (int i = 0; i < SensorCount; i++){
-          lineSensorValuesUnbiased[i] = lineSensorValues[i] - lineSensorBias[i]; 
-          if(lineSensorValuesUnbiased[i]>5000){// Read all line sensor values, reset any that are too high (prevent overflow)
-            lineSensorValuesUnbiased[i] = 0;
-          }
-        // Serial2.print(lineSensorValuesUnbiased[i]); 
-        // Serial2.print('\t');
-        lineAi = 0; //Number calculation for finding center
-        lineAid = 0;
-        for(int i = 0; i < SensorCount; i++) { 
-          lineAid = lineAid + lineSensorValuesUnbiased[i] * lineSensorPositions[i]; // calculate lineAid
-          lineAi = lineAi + lineSensorValuesUnbiased[i]; // Calculate LineAi
-        }
-        linePosition = lineAid/lineAi; // Find where on the sensor we are at
-        lineError = linePositionDes- double(linePosition); //find how far from zero that is
+        readReflectanceSensor();
 
-        //TODO : Find a way to turn this motor val calculations into mRVelDes and mLVelDes
-        //RightMotorVal = base_speed + Kp*lineError;
-        //LeftMotorVal = base_speed - Kp*lineError;
-      }
+        mRVelDes = 10 + lineKp*lineError;
+        mLVelDes = 10 - lineKp*lineError;
       } else{
         //calulate velocities with ramsete only if not line following
         Ramsete();

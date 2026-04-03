@@ -51,6 +51,7 @@ void readReflectanceSensor(){
     onLine = true;
   }
   linePosition = lineAid/lineAi; //0 is left side of sensor
+  lineError = linePositionDes- linePosition;
 
   //Serial.print(lineAid); //more optional telemetry
   //Serial.print('\t');
