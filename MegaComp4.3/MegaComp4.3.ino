@@ -521,6 +521,7 @@ void loop(){
     //m = color sensor
     //o = odometry
     //R = reset odometry to initial coordinates
+    //s = Line following testing
     //etc.
     case 'x': // stop all
       //Serial.println("Stopping everything");
@@ -722,6 +723,37 @@ void loop(){
     //reset odometry to initial position
     case 'R':
       actualP = initialP;
+      break;
+    case 's':
+      readReflectanceSensor();
+      if (onLine){
+        mRVelDes = vNext + lineKp*lineError;
+        mLVelDes = vNext - lineKp*lineError;
+      } else{ //how to behave if it looses track of line
+        mRVelDes = vNext;//just go straight, there is probably a more glamorous way of handleing this
+        mLVelDes = vNext;
+      }
+      attemptAccelL = (mLVelDes-mLVelDesLimit) / deltaT; // compute attempted accelerations to check if we're gonna overtune
+      attemptAccelR = (mRVelDes-mRVelDesLimit) / deltaT;
+      if (attemptAccelL > maxAccel){
+        mLVelDesLimit = mLVelDesLimit + (maxAccel*deltaT);
+      }else if (attemptAccelL < -1*maxAccel){
+        mLVelDesLimit = mLVelDesLimit - (maxAccel*deltaT);
+      }else{
+        mLVelDesLimit = mLVelDes;
+      }
+      if (attemptAccelR > maxAccel){
+        mRVelDesLimit = mRVelDesLimit + (maxAccel*deltaT);
+      }else if (attemptAccelR < -1*maxAccel){
+        mRVelDesLimit = mRVelDesLimit - (maxAccel*deltaT);
+      }else{
+        mRVelDesLimit = mRVelDes;
+      }
+      //do velocity pid and set motor power
+      pidL.Compute();
+      pidR.Compute();
+      leftMotorPower = round(leftMotorPowerDouble+KfVel*mLVelDesLimit); //also add feed forward
+      rightMotorPower = round(rightMotorPowerDouble+KfVel*mRVelDesLimit);
       break;
 
     default:
