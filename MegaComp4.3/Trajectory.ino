@@ -130,7 +130,7 @@ void GenTrajectory(void){
         //calcualate timeTrajStepFinish for the next step
         arcRadiusNext = 12.5;
         vNext = 10.0;
-        timeTrajStepFinish = abs((60.0)/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
+        timeTrajStepFinish = abs((90.0)/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
       break;
 
@@ -154,32 +154,6 @@ void GenTrajectory(void){
         //set the time the next trajectory step starts
         timeTrajStepStart = timeTraj;
 
-        //calcualate timeTrajStepFinish for the next step
-        arcRadiusNext = 12.5;
-        vNext = 10.0;
-        timeTrajStepFinish = abs((30.0+30.0)/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
-      }
-      break;
-
-    case 7:
-      PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
-
-      //get data from reflectance sensor
-      readReflectanceSensor();
-      readDistanceSensor(); //also prime distance sensor iir filter
-
-      //end condition //if 30 deg past theoretical or line sensor is valid and correct)
-      if ((timeTraj-timeTrajStepStart >= timeTrajStepFinish) || (onLine && (lineError<=0))){
-        //calculate what position step finished at to feed to next step start time
-        //recalculating at at the theorectical time avoids error propogating through the steps.
-        PandVdes = GenArc(timeTrajStepFinish*30.0/60.0, stepStartP, vNext, arcRadiusNext); //90/120 to use theoretical to set new position
-        stepStartP = PandVdes.p;
-        
-        trajStep = trajStep + 1;
-        
-        //set the time the next trajectory step starts
-        timeTrajStepStart = timeTraj;
-
         //comand starting line following
         followingLine = true;
 
@@ -188,7 +162,7 @@ void GenTrajectory(void){
         timeTrajStepFinish = abs((20.5+10.0)/vNext); //for straight line distance/velocity
       }
       break;
-    case 8: //drive 20.5cm until distance sensor trip also line follow
+    case 7: //drive 20.5cm until distance sensor trip also line follow
       //generated values dont get used because line following
       PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
       if(timeTraj-timeTrajStepStart >=timeTrajStepFinish*(1.0/2.0)){
@@ -225,7 +199,7 @@ void GenTrajectory(void){
       break;
 
     //turn left 10 deg w r=15
-    case 9:
+    case 8:
       PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
 
       //end condition //if 30 deg past theoretical or line sensor is valid and correct)
@@ -246,7 +220,7 @@ void GenTrajectory(void){
       }
       break;
 
-    case 10: //drive most the distance to distance sensor point (stop 5 theoretical cm short)
+    case 9: //drive most the distance to distance sensor point (stop 5 theoretical cm short)
       PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
       //prime iir filter for next case
       readDistanceSensor();
@@ -270,7 +244,7 @@ void GenTrajectory(void){
       break;
 
     //dont forget to update this number in main tab
-    case 11: // end of trajectory //uses the fact that traj step = 5 to signal that its finished the trajectory
+    case 10: // end of trajectory //uses the fact that traj step = 5 to signal that its finished the trajectory
       //doesnt actualy get here
       break;
     

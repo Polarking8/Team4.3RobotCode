@@ -342,7 +342,7 @@ void loop(){
           //escape once trajStep reaches the end
 //watch out for wrong traj step ending number.
   //yes I know this is defnitely a bad way to do this.
-          if (trajStep == 11){
+          if (trajStep == 10){
             state = state + 1;
           }
           break;
