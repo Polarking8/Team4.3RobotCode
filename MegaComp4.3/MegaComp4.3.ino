@@ -190,16 +190,16 @@ int hallVal = 0;
 // Reflectance Sensor Vars
 const uint8_t lineSensorCount = 8;  // # of sensors in reflectance array
 uint16_t lineSensorValues[lineSensorCount];  //reflectance sensor readings
-uint16_t lineSensorBias[lineSensorCount] = {140,140,140,140,140,92,92,140}; //calibration data goes here
+uint16_t lineSensorBias[lineSensorCount] = {140,140,140,140,140,140,140,192}; //calibration data goes here
 double lineSensorPositions[lineSensorCount] = {0.0, 0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 5.6}; //in cm relative to center of sensor
 uint16_t lineSensorValuesUnbiased[lineSensorCount];
 double lineAi = 0; //total sensor readings
 double lineAid = 0; //sensor readings weighted for distance
 bool onLine = false; //true if is over the line and reading is valid
 double linePosition = 0; //where the line is relative to the center of the sensor in cm
-double linePositionDes = 2.8;//2.8 = center of sensor
+double linePositionDes = 2.8;// 2.8 = center of sensor
 double lineError = 0;
-double lineKp = 1;
+double lineKp = 3;
 
 //Color Sensor Vars
 const int colorNumSamples = 8;
@@ -342,7 +342,7 @@ void loop(){
           //escape once trajStep reaches the end
 //watch out for wrong traj step ending number.
   //yes I know this is defnitely a bad way to do this.
-          if (trajStep == 10){
+          if (trajStep == 11){
             state = state + 1;
           }
           break;
@@ -430,12 +430,6 @@ void loop(){
 
       if ((timeMS-timeMS_old)>25) { 
         Serial2.print("<");
-        Serial2.print(stepStartP.x,2);
-        Serial2.print("\t");
-        Serial2.print(stepStartP.y,2);
-        Serial2.print("\t");
-        Serial2.print(stepStartP.theta*180.0/pi,3);
-        Serial2.print("\t");
         Serial2.print(PandVdes.p.x,2);
         Serial2.print("\t");
         Serial2.print(PandVdes.p.y,2);
@@ -449,6 +443,13 @@ void loop(){
         Serial2.print(timeTraj-timeTrajStepStart,2);
         Serial2.print("\t");
         Serial2.print(trajStep);
+        Serial2.print("\t");
+        Serial2.print(onLine);
+        Serial2.print("\t");
+        Serial2.print(lineError);
+        Serial2.print("\t");
+        Serial2.print(distVal);
+
         Serial2.print(">");
         timeMS_old = timeMS;
       }
@@ -521,7 +522,7 @@ void loop(){
     //m = color sensor
     //o = odometry
     //R = reset odometry to initial coordinates
-    //s = Line following testing
+    //g = line follow
     //etc.
     case 'x': // stop all
       //Serial.println("Stopping everything");
@@ -724,11 +725,21 @@ void loop(){
     case 'R':
       actualP = initialP;
       break;
-    case 's':
+    case 'g':
       readReflectanceSensor();
+      Serial.print(onLine);
+      Serial.print('\t');
       if (onLine){
+        vNext = 20;
         mRVelDes = vNext + lineKp*lineError;
         mLVelDes = vNext - lineKp*lineError;
+
+        Serial.print(mRVelDes);
+        Serial.print('\t');
+        Serial.print(mLVelDes);
+        Serial.print('\t');
+        Serial.print(lineError);
+        Serial.println('\t');
       } else{ //how to behave if it looses track of line
         mRVelDes = vNext;//just go straight, there is probably a more glamorous way of handleing this
         mLVelDes = vNext;

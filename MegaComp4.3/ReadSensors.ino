@@ -43,14 +43,14 @@ void readReflectanceSensor(){
     lineAi = lineAi + lineSensorValuesUnbiased[i];
   }
   //if lineAi = 0 it will cause a divide by zero error and break the code. Fix this by if lineAi = 0 set to very small number
-  if (lineAi == 0){
+  if (lineAi <= 100){
     lineAi = 0.1;
     onLine = false;
     //can also use this as a line detection validity, if Ai = 0 or is very small there probably isnt a line in sight and value isnt valid;
   } else{
     onLine = true;
   }
-  linePosition = lineAid/lineAi; //0 is left side of sensor
+  linePosition = constrain(lineAid/lineAi, 0, 5.6); //0 is left side of sensor
   lineError = linePositionDes- linePosition;
 
   //Serial.print(lineAid); //more optional telemetry
