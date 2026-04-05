@@ -342,10 +342,27 @@ void loop(){
           //escape once trajStep reaches the end
 //watch out for wrong traj step ending number.
   //yes I know this is defnitely a bad way to do this.
-          if (trajStep == 8){
+          if (trajStep == 10){
             state = state + 1;
           }
           break;
+
+        case 2: //finsihed trajectory following, now start spaming button and running conveyor
+          //start moving conveyor
+          conveyorPower = 400;
+
+          //start spaming button
+          if (((timeMS-timeMSpusher_old)>140) && (isPushed)) { 
+            timeMSpusher_old = timeMS;
+            servoAngle = servoRetractPos;
+            isPushed = false;
+          }
+          if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
+            timeMSpusher_old = timeMS;
+            servoAngle = servoPushPos;
+            isPushed = true;
+          }
+
 
         default:
           break;
@@ -356,15 +373,19 @@ void loop(){
         //put code to find mLVelDes and mRVelDes based on line position.
         readReflectanceSensor();
 
-        mRVelDes = 10 + lineKp*lineError;
-        mLVelDes = 10 - lineKp*lineError;
+        if (onLine){
+          mRVelDes = vNext + lineKp*lineError;
+          mLVelDes = vNext - lineKp*lineError;
+        } else{ //how to behave if it looses track of line
+          mRVelDes = vNext;//just go straight, there is probably a more glamorous way of handleing this
+          mLVelDes = vNext;
+        }
+        
       } else{
         //calulate velocities with ramsete only if not line following
         Ramsete();
       }
       
-
-
       //temp manualy set values
       // if ((timeMS-timeMSpusher_old)<1500) { 
       //   mRVelDes = 40;
@@ -382,6 +403,7 @@ void loop(){
       //   mRVelDes = _.toFloat();
       //   mLVelDes = mRVelDes;
       // }
+
       //do rate limiting to cap target motor velocity if it changed too much
       attemptAccelL = (mLVelDes-mLVelDesLimit) / deltaT; // compute attempted accelerations to check if we're gonna overtune
       attemptAccelR = (mRVelDes-mRVelDesLimit) / deltaT;
