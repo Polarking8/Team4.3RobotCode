@@ -5,8 +5,8 @@
 #include <DualTB9051FTGMotorShieldMod3230.h>
 
 //Libarries
-PWMServo Servo; // Create servo object
-PWMServo Servo2;
+PWMServo Servo; // Create main servo object
+PWMServo Servo2; // Create secondary servo object
 QTRSensors qtr; // create a reflectance sensor object
 DualTB9051FTGMotorShieldMod3230 md; // Create motor driver object
 
@@ -39,14 +39,18 @@ int MLOCMDual = A1;
 int XBeeTX = 16;
 int XBeeRX = 17;
 
-//_________________ Pusher servo pin
+//_________________ Pusher servo pins
 int ButtonServoPWM = 11;
+int Servo2Pin = 13; 
 
 //_________________ Solo Motor Driver Shield
 int MDIAGsolo = 22;
 int MPWM1solo = 44;
 int MPWM2solo = 45;
 int MOCMsolo = A13;
+
+//_________________ Relay Motor
+int SecondConveyorPin = 51; 
 
 //_________________ Reflectance Array
 int Reflect1 = 23;
@@ -64,10 +68,6 @@ int ColorS1 = 26;
 int ColorS2 = 28;
 int ColorS3 = 30;
 int ColorIN = 32;
-
-//__________________ New additions
-int SecondConveyorPin = 51; 
-int Servo2Pin = 13; 
 
 //_________________ Hall Effect 
 int HallEffect = A15;
@@ -106,8 +106,8 @@ int servoRetractPos = 0; //set servo out and in positions here.
 int servoPushPos = 52;
 int servoAngle =  servoRetractPos;
 
-int servo2RetractPos = 0;
-int servo2PushPos = 50;
+int servo2RetractPos = 8;
+int servo2PushPos = 70;
 int servo2Angle = servo2RetractPos;
 
 //motor control vars
@@ -116,7 +116,6 @@ int rightMotorPower = 0;//beteween +400 and -400
 double leftMotorPowerDouble = 0.0;
 double rightMotorPowerDouble = 0.0;
 int conveyorPower = 0;    //beteween +400 and -400
-int conveyor2Power = 0; // between 0 and 255
 
 //encoder vars
 Encoder encoderR(DriveEncoderRADual,DriveEncoderRBDual); //right
@@ -363,7 +362,7 @@ void loop(){
         case 2: //finsihed trajectory following, now start spamming button and running conveyor
           //start moving conveyor
           conveyorPower = 400;
-          conveyor2Power = 255; //Set second conveyor to forward
+          digitalWrite(SecondConveyorPin, HIGH);
 
           //start spaming button
           if (((timeMS-timeMSpusher_old)>140) && (isPushed)) { 
@@ -545,7 +544,7 @@ void loop(){
       leftMotorPower = 0;
       rightMotorPower = 0;
       conveyorPower = 0;
-      conveyor2Power = 0;
+      digitalWrite(SecondConveyorPin, LOW);
       servoAngle = servoRetractPos;
       servo2Angle = servo2RetractPos;
       isPushed = false;
@@ -575,20 +574,23 @@ void loop(){
     case 'u': // conveyer "forward"
       Serial.println("Conveyer Forward");
       conveyorPower = 400;
-      conveyor2Power = 255;
+      digitalWrite(SecondConveyorPin, HIGH);
       break;
     case 'd' : // conveyer "Backward"
       Serial.println("Conveyer Backward");
       conveyorPower = -400;
+      digitalWrite(SecondConveyorPin, LOW);
       break;
     case 'p': // Servo state push
       Serial.println("Servo push button");
       servoAngle = servoPushPos;
+      servo2Angle = servo2PushPos;
       isPushed = true;
       break; 
     case 'z': // Servo state return
       Serial.println("Servo return position");
       servoAngle = servoRetractPos;
+      servo2Angle = servo2RetractPos;
       isPushed = false;
       break; 
     case 'y': //PM10 Conveyor + servo
@@ -628,7 +630,7 @@ void loop(){
         case 1:
           //start moving conveyor
           conveyorPower = 400;
-          conveyor2Power = 255;
+          digitalWrite(SecondConveyorPin, HIGH);
           //start spaming button
           if (((timeMS-timeMSpusher_old)>140) && (isPushed)) { 
             timeMSpusher_old = timeMS;
@@ -795,9 +797,9 @@ void loop(){
       leftMotorPower = 0;
       rightMotorPower = 0;
       conveyorPower = 0;
-      conveyor2Power = 0;
-      servoAngle = 0;
-      servo2Angle = 0;
+      digitalWrite(SecondConveyorPin, LOW);
+      servoAngle = servoRetractPos;
+      servo2Angle = servo2RetractPos;
       break;
       //Turn everything off, same as case x
   }
@@ -820,7 +822,6 @@ void loop(){
     analogWrite(MPWM1solo,0);
     //Set both to 0
   }
-  digitalWrite(SecondConveyorPin,conveyor2Power);
 }
 
 static double wrapPi(double a)
