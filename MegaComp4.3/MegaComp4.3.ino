@@ -6,6 +6,7 @@
 
 //Libarries
 PWMServo Servo; // Create servo object
+PWMServo Servo2;
 QTRSensors qtr; // create a reflectance sensor object
 DualTB9051FTGMotorShieldMod3230 md; // Create motor driver object
 
@@ -64,6 +65,10 @@ int ColorS2 = 28;
 int ColorS3 = 30;
 int ColorIN = 32;
 
+//__________________ New additions
+int SecondConveyorPin = 51; 
+int Servo2Pin = 13; 
+
 //_________________ Hall Effect 
 int HallEffect = A15;
 
@@ -101,12 +106,17 @@ int servoRetractPos = 0; //set servo out and in positions here.
 int servoPushPos = 52;
 int servoAngle =  servoRetractPos;
 
+int servo2RetractPos = 0;
+int servo2PushPos = 50;
+int servo2Angle = servo2RetractPos;
+
 //motor control vars
 int leftMotorPower = 0; //beteween +400 and -400
 int rightMotorPower = 0;//beteween +400 and -400
 double leftMotorPowerDouble = 0.0;
 double rightMotorPowerDouble = 0.0;
 int conveyorPower = 0;    //beteween +400 and -400
+int conveyor2Power = 0; // between 0 and 255
 
 //encoder vars
 Encoder encoderR(DriveEncoderRADual,DriveEncoderRBDual); //right
@@ -249,6 +259,7 @@ void setup(){
   Serial2.print("Hello Uno Arduino!");
   Serial2.print('>');
   Servo.attach(ButtonServoPWM);
+  Servo2.attach(Servo2Pin);
   //This pinmode makes the conveyer work, we are manually going to analogWrite()
   pinMode(MPWM1solo,OUTPUT);
   pinMode(MPWM2solo,OUTPUT);
@@ -264,6 +275,8 @@ void setup(){
   pinMode(ColorS2,OUTPUT);
   pinMode(ColorS3,OUTPUT);
   pinMode(ColorIN,INPUT);
+  //Set up conveyor2 
+  pinMode(SecondConveyorPin,OUTPUT);
   digitalWrite(ColorS0, HIGH); // s1 and s0 choose frequency scaling
   digitalWrite(ColorS1, LOW);
 }
@@ -347,19 +360,22 @@ void loop(){
           }
           break;
 
-        case 2: //finsihed trajectory following, now start spaming button and running conveyor
+        case 2: //finsihed trajectory following, now start spamming button and running conveyor
           //start moving conveyor
           conveyorPower = 400;
+          conveyor2Power = 255; //Set second conveyor to forward
 
           //start spaming button
           if (((timeMS-timeMSpusher_old)>140) && (isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
+            servo2Angle = servo2RetractPos;
             isPushed = false;
           }
           if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoPushPos;
+            servo2Angle = servo2PushPos;
             isPushed = true;
           }
 
@@ -529,7 +545,9 @@ void loop(){
       leftMotorPower = 0;
       rightMotorPower = 0;
       conveyorPower = 0;
+      conveyor2Power = 0;
       servoAngle = servoRetractPos;
+      servo2Angle = servo2RetractPos;
       isPushed = false;
       break; 
 
@@ -557,6 +575,7 @@ void loop(){
     case 'u': // conveyer "forward"
       Serial.println("Conveyer Forward");
       conveyorPower = 400;
+      conveyor2Power = 255;
       break;
     case 'd' : // conveyer "Backward"
       Serial.println("Conveyer Backward");
@@ -589,11 +608,13 @@ void loop(){
           if (((timeMS-timeMSpusher_old)>140) && (isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
+            servo2Angle = servo2RetractPos;
             isPushed = false;
           }
           if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoPushPos;
+            servo2Angle = servo2PushPos;
             isPushed = true;
           }
 
@@ -607,16 +628,18 @@ void loop(){
         case 1:
           //start moving conveyor
           conveyorPower = 400;
-
+          conveyor2Power = 255;
           //start spaming button
           if (((timeMS-timeMSpusher_old)>140) && (isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
+            servo2Angle = servo2RetractPos;
             isPushed = false;
           }
           if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoPushPos;
+            servo2Angle = servo2PushPos;
             isPushed = true;
           }
           break;
@@ -772,13 +795,16 @@ void loop(){
       leftMotorPower = 0;
       rightMotorPower = 0;
       conveyorPower = 0;
+      conveyor2Power = 0;
       servoAngle = 0;
+      servo2Angle = 0;
       break;
       //Turn everything off, same as case x
   }
 
   //Set motors to numbers set during switch case 
   Servo.write(servoAngle);
+  Servo2.write(servo2Angle);
   md.setM1Speed(rightMotorPower); //motor 1 = right motor
   stopIfFault();
   md.setM2Speed(leftMotorPower); //motor 2 = left motor
@@ -794,6 +820,7 @@ void loop(){
     analogWrite(MPWM1solo,0);
     //Set both to 0
   }
+  digitalWrite(SecondConveyorPin,conveyor2Power);
 }
 
 static double wrapPi(double a)
