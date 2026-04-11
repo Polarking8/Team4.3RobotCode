@@ -86,7 +86,7 @@ void GenTrajectory(void){
       }
       break;
     
-    case 4: //drive most the distance to distance sensor point (stop 5 theoretical cm short)
+    case 4: //drive most the distance to distance sensor point (stop 10 theoretical cm short)
       PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
       //prime iir filter for next case
       readDistanceSensor();
@@ -103,8 +103,8 @@ void GenTrajectory(void){
         timeTrajStepStart = timeTraj;
 
         //calcualate timeTrajStepFinish for the next step
-        vNext = 10.0; //slower for this to make sure we dont run past distance target
-        timeTrajStepFinish = abs(15/vNext); //for straight line distance/velocity
+        vNext = 5.0; //slower for this to make sure we dont run past distance target
+        timeTrajStepFinish = abs(20/vNext); //for straight line distance/velocity
         
       }
       break;
@@ -114,7 +114,7 @@ void GenTrajectory(void){
 
       //end condition
       readDistanceSensor();
-      if ((timeTraj-timeTrajStepStart >= timeTrajStepFinish) || (distVal>73)){ //stop if distance sensor trips //75 is was found experimetnaly (73 to account for iir delay)
+      if ((timeTraj-timeTrajStepStart >= timeTrajStepFinish) || (distVal>85)){ //stop if distance sensor trips //85 is was found experimetnaly // was 75 (73 to account for iir delay) 
         //calculate what position step finished at to feed to next step start time
         //recalculating at at the theorectical time avoids error propogating through the steps.
         PandVdes = GenStraight(timeTrajStepFinish, stepStartP, vNext);
@@ -130,11 +130,11 @@ void GenTrajectory(void){
         //calcualate timeTrajStepFinish for the next step
         arcRadiusNext = 12.5;
         vNext = 10.0;
-        timeTrajStepFinish = abs((90.0)/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
+        timeTrajStepFinish = abs((100.0)/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
       break;
 
-    //turn left 90 deg (theoretical) w r=12.5 (just first 60deg until it starts looking for line)
+    //turn left 90 deg (theoretical) w r=12.5
     case 6:
       PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
 
@@ -158,7 +158,7 @@ void GenTrajectory(void){
         followingLine = true;
 
         //calcualate timeTrajStepFinish for the next step (backup in case distance fails
-        vNext = 10.0; //used by line following outside
+        vNext = 5.0; //used by line following outside
         timeTrajStepFinish = abs((20.5+10.0)/vNext); //for straight line distance/velocity
       }
       break;
@@ -171,8 +171,8 @@ void GenTrajectory(void){
       }
       //end condition
       readDistanceSensor();
-      //find a value that stops 6.6 cm from button. -->180
-      if ((timeTraj-timeTrajStepStart >= timeTrajStepFinish) ||  (distVal>175)){  //stop if distance sensor trips //180 is was found experimentally (175 to account for iir delay)
+      //find a value that stops 6.6 cm from button. -->175
+      if ((timeTraj-timeTrajStepStart >= timeTrajStepFinish) ||  (distVal>175)){  //stop if distance sensor trips //175 is was found experimentally (175 to account for iir delay)
         //calculate what position step finished at to feed to next step start time
         //recalculating at at the theorectical time avoids error propogating through the steps.
         PandVdes = GenStraight(timeTrajStepFinish*20.5/30.5, stepStartP, vNext); //uses theoretical
@@ -202,8 +202,8 @@ void GenTrajectory(void){
     case 8:
       PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
 
-      //end condition //if 30 deg past theoretical or line sensor is valid and correct)
-      if ((timeTraj-timeTrajStepStart >= timeTrajStepFinish) || (onLine && (lineError<=0))){
+      //end condition
+      if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
         //calculate what position step finished at to feed to next step start time
         //recalculating at at the theorectical time avoids error propogating through the steps.
         PandVdes = GenArc(timeTrajStepFinish, stepStartP, vNext, arcRadiusNext);

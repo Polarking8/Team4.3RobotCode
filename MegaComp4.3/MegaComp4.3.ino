@@ -154,7 +154,7 @@ struct PandV{ //struct to store all position and velocity vars needed to run ram
   double w;
 };
 
-double maxVel = 25; //cm/s //max vel of center of robot
+double maxVel = 15; //cm/s //max vel of center of robot
 double maxAccel = 100;//100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
 //will be updated during the trajectory following to the current theoretical (if it was following perfectly) x,y,theta, and velocities
 PandV PandVdes;
@@ -171,7 +171,7 @@ Pose stepStartP = initialP;
 double arcRadiusNext = 0; //occasionaly used variable for the arc radius of the upcoming trajectory step
 double vNext = 0; //used to remember what the velocity will be for the current step.
 //navigation vars
-double wheelSpacing = 25.54*1.02065; //wheel spacing
+double wheelSpacing = 25.54*1.0036; //wheel spacing, was 1.02065
 //starting position of robot
 Pose actualP = initialP;
 
@@ -206,7 +206,7 @@ double lineAi = 0; //total sensor readings
 double lineAid = 0; //sensor readings weighted for distance
 bool onLine = false; //true if is over the line and reading is valid
 double linePosition = 0; //where the line is relative to the center of the sensor in cm
-double linePositionDes = 2.8;// 2.8 = center of sensor
+double linePositionDes = 1.8;// 2.8 = center of sensor
 double lineError = 0;
 double lineKp = 3;
 
@@ -445,18 +445,6 @@ void loop(){
 
       if ((timeMS-timeMS_old)>25) { 
         Serial2.print("<");
-        Serial2.print(PandVdes.p.x,2);
-        Serial2.print("\t");
-        Serial2.print(PandVdes.p.y,2);
-        Serial2.print("\t");
-        Serial2.print(PandVdes.p.theta*180.0/pi,3);
-        Serial2.print("\t");
-        Serial2.print(PandVdes.v,2);
-        Serial2.print("\t");
-        Serial2.print(PandVdes.w,2);
-        Serial2.print("\t");
-        Serial2.print(timeTraj-timeTrajStepStart,2);
-        Serial2.print("\t");
         Serial2.print(trajStep);
         Serial2.print("\t");
         Serial2.print(onLine);
