@@ -103,11 +103,11 @@ bool freshCommand = true; //flag var for restarting state machines
 
 //servo vars
 int servoRetractPos = 0; //set servo out and in positions here.
-int servoPushPos = 52;
+int servoPushPos = 56; //52
 int servoAngle =  servoRetractPos;
 
-int servo2RetractPos = 8;
-int servo2PushPos = 70;
+int servo2RetractPos = 12;
+int servo2PushPos = 30;
 int servo2Angle = servo2RetractPos;
 
 //motor control vars
@@ -154,7 +154,7 @@ struct PandV{ //struct to store all position and velocity vars needed to run ram
   double w;
 };
 
-double maxVel = 15; //cm/s //max vel of center of robot
+double maxVel = 25; //cm/s //max vel of center of robot
 double maxAccel = 100;//100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
 //will be updated during the trajectory following to the current theoretical (if it was following perfectly) x,y,theta, and velocities
 PandV PandVdes;

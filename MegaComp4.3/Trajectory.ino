@@ -8,6 +8,9 @@ void GenTrajectory(void){
   //reset timers and state var if the command is fresh
   switch (trajStep){
     case 0:
+      // hold conveyor up slightly
+      conveyorPower = 120;
+
       //reset timers and starting position
       timeTrajStepStart = timeTraj;
       stepStartP = initialP;
@@ -34,13 +37,13 @@ void GenTrajectory(void){
         //set the time the next trajectory step starts
         timeTrajStepStart = timeTraj;
         //calcualate timeTrajStepFinish for the next step
-        arcRadiusNext = 60.0;
+        arcRadiusNext = 65.0;
         vNext = maxVel;
         timeTrajStepFinish = abs(45.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
       break;
 
-    //turn in left in 45deg w rad of 60cm
+    //turn in left in 45deg w rad of 65cm
     case 2:
       PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
 
@@ -57,13 +60,13 @@ void GenTrajectory(void){
         timeTrajStepStart = timeTraj;
 
         //calcualate timeTrajStepFinish for the next step
-        arcRadiusNext = -60.0;
+        arcRadiusNext = -65.0;
         vNext = maxVel;
         timeTrajStepFinish = abs(45.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
       break;
 
-    //turn in right in 45deg w rad of 60cm
+    //turn in right in 45deg w rad of 65cm
     case 3:
       PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
 
@@ -81,12 +84,12 @@ void GenTrajectory(void){
 
         //calcualate timeTrajStepFinish for the next step
         vNext = maxVel;
-        timeTrajStepFinish = abs((86.54-10.0)/vNext); //for straight line distance/velocity
+        timeTrajStepFinish = abs((79.48-15.0)/vNext); //for straight line distance/velocity
         
       }
       break;
     
-    case 4: //drive most the distance to distance sensor point (stop 10 theoretical cm short)
+    case 4: //drive most the distance to distance sensor point (stop 15 theoretical cm short)
       PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
       //prime iir filter for next case
       readDistanceSensor();
@@ -103,24 +106,24 @@ void GenTrajectory(void){
         timeTrajStepStart = timeTraj;
 
         //calcualate timeTrajStepFinish for the next step
-        vNext = 5.0; //slower for this to make sure we dont run past distance target
-        timeTrajStepFinish = abs(20/vNext); //for straight line distance/velocity
+        vNext = 10.0; //slower for this to make sure we dont run past distance target
+        timeTrajStepFinish = abs(15/vNext); //for straight line distance/velocity
         
       }
       break;
 
-    case 5: //drive until distance sensor trips or 10cm (5cm past theoretical)
+    case 5: //drive until distance sensor trips or 15cm
       PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
 
       //end condition
       readDistanceSensor();
-      if ((timeTraj-timeTrajStepStart >= timeTrajStepFinish) || (distVal>85)){ //stop if distance sensor trips //85 is was found experimetnaly // was 75 (73 to account for iir delay) 
+      if ((timeTraj-timeTrajStepStart >= timeTrajStepFinish)){ //|| (distVal>65)){ //stop if distance sensor trips //85 is was found experimetnaly // was 75 (73 to account for iir delay) 
         //calculate what position step finished at to feed to next step start time
         //recalculating at at the theorectical time avoids error propogating through the steps.
         PandVdes = GenStraight(timeTrajStepFinish, stepStartP, vNext);
         stepStartP = PandVdes.p;
         //override x codinate with theoretical since sensor says so
-        actualP.x = 205.84;
+        actualP.x = 205.86;
         stepStartP.x = actualP.x;
         trajStep = trajStep + 1;
         
@@ -130,18 +133,27 @@ void GenTrajectory(void){
         //calcualate timeTrajStepFinish for the next step
         arcRadiusNext = 12.5;
         vNext = 10.0;
-        timeTrajStepFinish = abs((100.0)/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
+        timeTrajStepFinish = abs((95.0)/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
       break;
 
-    //turn left 90 deg (theoretical) w r=12.5
+    //turn left 95 deg w r=12.5 //should theoreticaly put sensor on center to let line following deal with the offset
     case 6:
       PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
 
       //get data from reflectance sensor
       readReflectanceSensor();
       readDistanceSensor(); //also prime distance sensor iir filter
-
+      //deal with conveyor droping sequence
+      if(timeTraj-timeTrajStepStart >=timeTrajStepFinish*(1.0) - 0.35){
+        //drop second conveyor by droping main partialy
+        if(timeTraj-timeTrajStepStart >=timeTrajStepFinish*(1.0) - 0.25){
+          //keep main conveyor on for 100ms (enough to drop second but not main)
+          conveyorPower = 0;
+        } else{
+          conveyorPower = -400;
+        }
+      }
       //end condition
       if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
         //calculate what position step finished at to feed to next step start time
@@ -158,28 +170,33 @@ void GenTrajectory(void){
         followingLine = true;
 
         //calcualate timeTrajStepFinish for the next step (backup in case distance fails
-        vNext = 5.0; //used by line following outside
-        timeTrajStepFinish = abs((20.5+10.0)/vNext); //for straight line distance/velocity
+        vNext = 10.0; //used by line following outside
+        timeTrajStepFinish = abs((18.0+10.0)/vNext); //for straight line distance/velocity
       }
       break;
     case 7: //drive 20.5cm until distance sensor trip also line follow
       //generated values dont get used because line following
       PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
-      if(timeTraj-timeTrajStepStart >=timeTrajStepFinish*(1.0/2.0)){
-        //drop conveyor
+
+      
+      if(timeTraj-timeTrajStepStart >=timeTrajStepFinish*(2.0/3.0)){
+        //drop main.
         conveyorPower = -400;
+      } else{
+        conveyorPower = 0;
       }
+
       //end condition
       readDistanceSensor();
       //find a value that stops 6.6 cm from button. -->175
       if ((timeTraj-timeTrajStepStart >= timeTrajStepFinish) ||  (distVal>175)){  //stop if distance sensor trips //175 is was found experimentally (175 to account for iir delay)
         //calculate what position step finished at to feed to next step start time
         //recalculating at at the theorectical time avoids error propogating through the steps.
-        PandVdes = GenStraight(timeTrajStepFinish*20.5/30.5, stepStartP, vNext); //uses theoretical
+        PandVdes = GenStraight(timeTrajStepFinish*18.0/(18.0+10.0), stepStartP, vNext); //uses theoretical
         stepStartP = PandVdes.p;
         //override x, y and theta codinate, known from line and ditance sensor
-        actualP.x = 218.34;
-        actualP.y = 83.336;
+        actualP.x = 218.36;
+        actualP.y = 83.76;
         actualP.theta = 90.0;
         stepStartP = actualP;
         
@@ -216,7 +233,7 @@ void GenTrajectory(void){
 
         //calcualate timeTrajStepFinish for the next step
         vNext = 10.0;
-        timeTrajStepFinish = abs(4.0/vNext); //4cm theoretical, 4 more to slip wheels a bit after hitting pushblocks //for straight line distance/velocity
+        timeTrajStepFinish = abs(8.0/vNext); //4cm theoretical, 4 more to slip wheels a bit after hitting pushblocks //for straight line distance/velocity
       }
       break;
 
