@@ -84,7 +84,7 @@ void GenTrajectory(void){
 
         //calcualate timeTrajStepFinish for the next step
         vNext = maxVel;
-        timeTrajStepFinish = abs((89.74-4.0-10.0)/vNext); //was 89.74 //for straight line distance/velocity
+        timeTrajStepFinish = abs((89.74-3.0-10.0)/vNext); //was 89.74 //for straight line distance/velocity
         
       }
       break;
