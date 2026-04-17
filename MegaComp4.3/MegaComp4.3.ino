@@ -208,7 +208,7 @@ bool onLine = false; //true if is over the line and reading is valid
 double linePosition = 0; //where the line is relative to the center of the sensor in cm
 double linePositionDes = 1.8;// 2.8 = center of sensor
 double lineError = 0;
-double lineKp = 3;
+double lineKp = 5;//3
 
 //Color Sensor Vars
 const int colorNumSamples = 8;
@@ -389,8 +389,11 @@ void loop(){
         readReflectanceSensor();
 
         if (onLine){
-          mRVelDes = vNext + lineKp*lineError;
-          mLVelDes = vNext - lineKp*lineError;
+          //mRVelDes = vNext + lineKp*lineError;
+          //mLVelDes = vNext - lineKp*lineError;
+          actualP.x = 218.34+lineError+cos(actualP.theta)*20.0; //overide x cord using known good line data
+          //218.34 (theoretical pos when error is 0) + 3 (offset to get us where we want to be) + account for angle 
+          Ramsete();
         } else{ //how to behave if it looses track of line
           Ramsete();
           //mRVelDes = vNext;
@@ -400,6 +403,7 @@ void loop(){
       } else{
         //calulate velocities with ramsete only if not line following
         Ramsete();
+        readReflectanceSensor();
       }
       
       //temp manualy set values

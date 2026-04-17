@@ -84,7 +84,7 @@ void GenTrajectory(void){
 
         //calcualate timeTrajStepFinish for the next step
         vNext = maxVel;
-        timeTrajStepFinish = abs((89.74-10.0)/vNext); //for straight line distance/velocity
+        timeTrajStepFinish = abs((89.74-3.0-10.0)/vNext); //was 89.74 //for straight line distance/velocity
         
       }
       break;
@@ -133,11 +133,11 @@ void GenTrajectory(void){
         //calcualate timeTrajStepFinish for the next step
         arcRadiusNext = 12.5;
         vNext = 15.0;
-        timeTrajStepFinish = abs((95.0)/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
+        timeTrajStepFinish = abs((90.0)/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
       break;
 
-    //turn left 95 deg w r=12.5 //should theoreticaly put sensor on center to let line following deal with the offset
+    //turn left 90 deg w r=12.5 //should theoreticaly put sensor on center to let line following deal with the offset
     case 6:
       PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
 
@@ -195,9 +195,9 @@ void GenTrajectory(void){
         PandVdes = GenStraight(timeTrajStepFinish*18.0/(18.0+10.0), stepStartP, vNext); //uses theoretical
         stepStartP = PandVdes.p;
         //override x, y and theta codinate, known from line and ditance sensor
-        actualP.x = 218.34;
+        //actualP.x = 218.34;
         actualP.y = 83.78;
-        actualP.theta = 90.0;
+        //actualP.theta = 90.0;
         stepStartP = actualP;
         
         //disable line following
