@@ -154,7 +154,7 @@ struct PandV{ //struct to store all position and velocity vars needed to run ram
   double w;
 };
 
-double maxVel = 25; //cm/s //max vel of center of robot
+double maxVel = 40; //cm/s //max vel of center of robot
 double maxAccel = 100;//100; //cm/s/s //implement in the velocity controller as a form of smoothing, tune lower to prevent wheel slip.
 //will be updated during the trajectory following to the current theoretical (if it was following perfectly) x,y,theta, and velocities
 PandV PandVdes;
@@ -365,7 +365,7 @@ void loop(){
           digitalWrite(SecondConveyorPin, HIGH);
 
           //start spaming button
-          if (((timeMS-timeMSpusher_old)>140) && (isPushed)) { 
+          if (((timeMS-timeMSpusher_old)>175) && (isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
             servo2Angle = servo2RetractPos;
@@ -389,11 +389,13 @@ void loop(){
         readReflectanceSensor();
 
         if (onLine){
-          mRVelDes = vNext + lineKp*lineError;
-          mLVelDes = vNext - lineKp*lineError;
+          Ramsete();
+          //mRVelDes = vNext + lineKp*lineError;
+          //mLVelDes = vNext - lineKp*lineError;
         } else{ //how to behave if it looses track of line
-          mRVelDes = vNext;//just go straight, there is probably a more glamorous way of handleing this
-          mLVelDes = vNext;
+          Ramsete();
+          //mRVelDes = vNext;//just go straight, there is probably a more glamorous way of handleing this
+          //mLVelDes = vNext;
         }
         
       } else{
@@ -584,7 +586,7 @@ void loop(){
     case 'y': //PM10 Conveyor + servo
       //if flag var is true, reset state machine timers and state
       if (freshCommand){
-        state = 0;
+        state = 1; //start with button pushing
         isPushed = false;
         timeMS_old = timeMS;
         timeMSpusher_old = timeMS;
@@ -595,7 +597,7 @@ void loop(){
           conveyorPower = -400;
 
           //start spaming button
-          if (((timeMS-timeMSpusher_old)>140) && (isPushed)) { 
+          if (((timeMS-timeMSpusher_old)>125) && (isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
             servo2Angle = servo2RetractPos;
@@ -620,7 +622,7 @@ void loop(){
           conveyorPower = 400;
           digitalWrite(SecondConveyorPin, HIGH);
           //start spaming button
-          if (((timeMS-timeMSpusher_old)>140) && (isPushed)) { 
+          if (((timeMS-timeMSpusher_old)>175) && (isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
             servo2Angle = servo2RetractPos;
