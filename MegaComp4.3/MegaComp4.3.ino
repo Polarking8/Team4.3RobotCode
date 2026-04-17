@@ -389,12 +389,11 @@ void loop(){
         readReflectanceSensor();
 
         if (onLine){
-          Ramsete();
-          //mRVelDes = vNext + lineKp*lineError;
-          //mLVelDes = vNext - lineKp*lineError;
+          mRVelDes = vNext + lineKp*lineError;
+          mLVelDes = vNext - lineKp*lineError;
         } else{ //how to behave if it looses track of line
           Ramsete();
-          //mRVelDes = vNext;//just go straight, there is probably a more glamorous way of handleing this
+          //mRVelDes = vNext;
           //mLVelDes = vNext;
         }
         

@@ -37,13 +37,13 @@ void GenTrajectory(void){
         //set the time the next trajectory step starts
         timeTrajStepStart = timeTraj;
         //calcualate timeTrajStepFinish for the next step
-        arcRadiusNext = 65.0;
+        arcRadiusNext = 53.3;
         vNext = maxVel;
-        timeTrajStepFinish = abs(45.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
+        timeTrajStepFinish = abs(50.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
       break;
 
-    //turn in left in 45deg w rad of 65cm
+    //turn in left 50deg w rad of 53.3cm
     case 2:
       PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
 
@@ -60,13 +60,13 @@ void GenTrajectory(void){
         timeTrajStepStart = timeTraj;
 
         //calcualate timeTrajStepFinish for the next step
-        arcRadiusNext = -65.0;
+        arcRadiusNext = -53.3;
         vNext = maxVel;
-        timeTrajStepFinish = abs(45.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
+        timeTrajStepFinish = abs(50.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
       break;
 
-    //turn in right in 45deg w rad of 65cm
+    //turn in right 50deg w rad of 53.3cm
     case 3:
       PandVdes = GenArc((timeTraj-timeTrajStepStart), stepStartP, vNext, arcRadiusNext);
 
@@ -84,7 +84,7 @@ void GenTrajectory(void){
 
         //calcualate timeTrajStepFinish for the next step
         vNext = maxVel;
-        timeTrajStepFinish = abs((79.48-15.0)/vNext); //for straight line distance/velocity
+        timeTrajStepFinish = abs((89.74-10.0)/vNext); //for straight line distance/velocity
         
       }
       break;
@@ -107,12 +107,12 @@ void GenTrajectory(void){
 
         //calcualate timeTrajStepFinish for the next step
         vNext = 20.0; //slower for this to make sure we dont run past distance target
-        timeTrajStepFinish = abs(15.0/vNext); //for straight line distance/velocity
+        timeTrajStepFinish = abs(10.0/vNext); //for straight line distance/velocity
         
       }
       break;
 
-    case 5: //drive until distance sensor trips or 15cm
+    case 5: //drive last 10cm slow, used to use distance sensor trip but got rid of it
       PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
 
       //end condition
@@ -133,7 +133,7 @@ void GenTrajectory(void){
         //calcualate timeTrajStepFinish for the next step
         arcRadiusNext = 12.5;
         vNext = 15.0;
-        timeTrajStepFinish = abs((90.0)/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
+        timeTrajStepFinish = abs((95.0)/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
       break;
 
@@ -158,7 +158,7 @@ void GenTrajectory(void){
       if (timeTraj-timeTrajStepStart >= timeTrajStepFinish){
         //calculate what position step finished at to feed to next step start time
         //recalculating at at the theorectical time avoids error propogating through the steps.
-        PandVdes = GenArc(timeTrajStepFinish*90.0/90.0, stepStartP, vNext, arcRadiusNext); //90/120 to use theoretical to set new position
+        PandVdes = GenArc(timeTrajStepFinish*90.0/95.0, stepStartP, vNext, arcRadiusNext); //90/120 to use theoretical to set new position
         stepStartP = PandVdes.p;
         
         trajStep = trajStep + 1;
@@ -174,7 +174,7 @@ void GenTrajectory(void){
         timeTrajStepFinish = abs((18.0+10.0)/vNext); //for straight line distance/velocity
       }
       break;
-    case 7: //drive 20.5cm until distance sensor trip also line follow
+    case 7: //drive 18cm until distance sensor trip also line follow
       //generated values dont get used because line following
       PandVdes = GenStraight((timeTraj-timeTrajStepStart), stepStartP, vNext);
 
@@ -195,8 +195,8 @@ void GenTrajectory(void){
         PandVdes = GenStraight(timeTrajStepFinish*18.0/(18.0+10.0), stepStartP, vNext); //uses theoretical
         stepStartP = PandVdes.p;
         //override x, y and theta codinate, known from line and ditance sensor
-        actualP.x = 218.36;
-        actualP.y = 83.76;
+        actualP.x = 218.34;
+        actualP.y = 83.78;
         actualP.theta = 90.0;
         stepStartP = actualP;
         
@@ -210,7 +210,7 @@ void GenTrajectory(void){
 
         //calcualate timeTrajStepFinish for the next step
         arcRadiusNext = 15.0;
-        vNext = 20.0;
+        vNext = 15.0;
         timeTrajStepFinish = abs(10.0/180.0*pi*arcRadiusNext/vNext); //for arc, arc angle/180*pi*radius/velocity
       }
       break;
@@ -232,7 +232,7 @@ void GenTrajectory(void){
         timeTrajStepStart = timeTraj;
 
         //calcualate timeTrajStepFinish for the next step
-        vNext = 20.0;
+        vNext = 15.0;
         timeTrajStepFinish = abs(8.0/vNext); //4cm theoretical, 4 more to slip wheels a bit after hitting pushblocks //for straight line distance/velocity
       }
       break;
