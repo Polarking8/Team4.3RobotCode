@@ -365,13 +365,13 @@ void loop(){
           digitalWrite(SecondConveyorPin, HIGH);
 
           //start spaming button
-          if (((timeMS-timeMSpusher_old)>175) && (isPushed)) { 
+          if (((timeMS-timeMSpusher_old)>165) && (isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
             servo2Angle = servo2RetractPos;
             isPushed = false;
           }
-          if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
+          if (((timeMS-timeMSpusher_old)>115) && (!isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoPushPos;
             servo2Angle = servo2PushPos;
@@ -600,13 +600,13 @@ void loop(){
           conveyorPower = -400;
 
           //start spaming button
-          if (((timeMS-timeMSpusher_old)>125) && (isPushed)) { 
+          if (((timeMS-timeMSpusher_old)>165) && (isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
             servo2Angle = servo2RetractPos;
             isPushed = false;
           }
-          if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
+          if (((timeMS-timeMSpusher_old)>115) && (!isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoPushPos;
             servo2Angle = servo2PushPos;
