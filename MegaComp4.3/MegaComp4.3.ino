@@ -82,6 +82,8 @@ int DistanceSensor = A14;
 unsigned long timeMS = 0;
 unsigned long timeMS_old = 0;
 unsigned long timeMSpusher_old = 0; //update time old only after performing a print
+unsigned long timeMS_old2 = 0;
+unsigned long timeMSpusher_old2 = 0;
 
 //micros timer for real time and pid applications
 double time = 0;
@@ -96,6 +98,7 @@ double deltaT = 0; //time the last whole loop took
 //state machine variables
 int state = 0; // main state machine controll variable
 bool isPushed = false;
+bool isPushed2 = false;
 
 //serial coms vars
 char inputChar = 'x';//'x'; //the stop everything state
@@ -245,6 +248,7 @@ void setup(){
   //initialize timers
   timeMS = millis();
   timeMS_old = timeMS;
+  timeMS_old2 = timeMS;
   time = micros() / 1000000.0;
   timeTrajStart = time;
   timeTraj = time - timeTrajStart;
@@ -318,8 +322,11 @@ void loop(){
       if (freshCommand){
         state = 0;
         isPushed = false;
+        isPushed2 = false;
         timeMS_old = timeMS;
+        timeMS_old2 = timeMS;
         timeMSpusher_old = timeMS;
+        timeMSpusher_old2 = timeMS;
         timeTrajStart = micros() / 1000000.0;
       }
 
@@ -365,17 +372,27 @@ void loop(){
           digitalWrite(SecondConveyorPin, HIGH);
 
           //start spaming button
+          //First servo
           if (((timeMS-timeMSpusher_old)>155) && (isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
-            servo2Angle = servo2RetractPos;
             isPushed = false;
           }
           if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoPushPos;
-            servo2Angle = servo2PushPos;
             isPushed = true;
+          }
+          //Second servo
+          if (((timeMS-timeMSpusher_old2)>150) && (isPushed2)) { 
+            timeMSpusher_old2 = timeMS;
+            servo2Angle = servo2RetractPos;
+            isPushed2 = false;
+          }
+          if (((timeMS-timeMSpusher_old2)>120) && (!isPushed2)) { 
+            timeMSpusher_old2 = timeMS;
+            servo2Angle = servo2PushPos;
+            isPushed2 = true;
           }
 
 
@@ -593,6 +610,8 @@ void loop(){
         isPushed = false;
         timeMS_old = timeMS;
         timeMSpusher_old = timeMS;
+        timeMS_old2 = timeMS;
+        timeMSpusher_old2 = timeMS;
       }
       switch (state){
         case 0:
@@ -625,17 +644,27 @@ void loop(){
           conveyorPower = 400;
           digitalWrite(SecondConveyorPin, HIGH);
           //start spaming button
-          if (((timeMS-timeMSpusher_old)>155 ) && (isPushed)) {
+          //servo 1 
+          if (((timeMS-timeMSpusher_old)>155) && (isPushed)) {
             timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
-            servo2Angle = servo2RetractPos;
             isPushed = false;
           }
           if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoPushPos;
-            servo2Angle = servo2PushPos;
             isPushed = true;
+          }
+          //servo 2
+          if (((timeMS-timeMSpusher_old2)>150) && (isPushed2)) {
+            timeMSpusher_old2 = timeMS;
+            servo2Angle = servo2RetractPos;
+            isPushed2 = false;
+          }
+          if (((timeMS-timeMSpusher_old2)>120) && (!isPushed2)) { 
+            timeMSpusher_old2 = timeMS;
+            servo2Angle = servo2PushPos;
+            isPushed2 = true;
           }
           break;
       }
