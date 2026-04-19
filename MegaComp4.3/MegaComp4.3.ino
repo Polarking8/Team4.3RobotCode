@@ -105,12 +105,12 @@ char inputChar = 'x';//'x'; //the stop everything state
 bool freshCommand = true; //flag var for restarting state machines
 
 //servo vars
-int servoRetractPos = 16; //set servo out and in positions here.
-int servoPushPos = 56; //52
+int servoRetractPos = 7; //set servo out and in positions here.
+int servoPushPos = 35; //40
 int servoAngle =  servoRetractPos;
 
 int servo2RetractPos = 12;
-int servo2PushPos = 35;
+int servo2PushPos = 30; // was 35
 int servo2Angle = servo2RetractPos;
 
 //motor control vars
@@ -373,12 +373,12 @@ void loop(){
 
           //start spaming button
           //First servo
-          if (((timeMS-timeMSpusher_old)>155) && (isPushed)) { 
+          if (((timeMS-timeMSpusher_old)>150) && (isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
             isPushed = false;
           }
-          if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
+          if (((timeMS-timeMSpusher_old)>120) && (!isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoPushPos;
             isPushed = true;
@@ -645,12 +645,12 @@ void loop(){
           digitalWrite(SecondConveyorPin, HIGH);
           //start spaming button
           //servo 1 
-          if (((timeMS-timeMSpusher_old)>155) && (isPushed)) {
+          if (((timeMS-timeMSpusher_old)>150) && (isPushed)) {
             timeMSpusher_old = timeMS;
             servoAngle = servoRetractPos;
             isPushed = false;
           }
-          if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
+          if (((timeMS-timeMSpusher_old)>120) && (!isPushed)) { 
             timeMSpusher_old = timeMS;
             servoAngle = servoPushPos;
             isPushed = true;
