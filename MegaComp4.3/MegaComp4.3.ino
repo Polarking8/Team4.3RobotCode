@@ -7,6 +7,7 @@
 //Libarries
 PWMServo Servo; // Create main servo object
 PWMServo Servo2; // Create secondary servo object
+PWMServo Servo3;
 QTRSensors qtr; // create a reflectance sensor object
 DualTB9051FTGMotorShieldMod3230 md; // Create motor driver object
 
@@ -41,7 +42,8 @@ int XBeeRX = 17;
 
 //_________________ Pusher servo pins
 int ButtonServoPWM = 11;
-int Servo2Pin = 13; 
+int Servo2Pin = 13;
+int Servo3Pin = 43;
 
 //_________________ Solo Motor Driver Shield
 int MDIAGsolo = 22;
@@ -82,8 +84,8 @@ int DistanceSensor = A14;
 unsigned long timeMS = 0;
 unsigned long timeMS_old = 0;
 unsigned long timeMSpusher_old = 0; //update time old only after performing a print
-unsigned long timeMS_old2 = 0;
 unsigned long timeMSpusher_old2 = 0;
+unsigned long timeMSpusher_old3 = 0;
 
 //micros timer for real time and pid applications
 double time = 0;
@@ -99,10 +101,13 @@ double deltaT = 0; //time the last whole loop took
 int state = 0; // main state machine controll variable
 bool isPushed = false;
 bool isPushed2 = false;
+bool isPushed3 = false;
 
 //serial coms vars
 char inputChar = 'x';//'x'; //the stop everything state
 bool freshCommand = true; //flag var for restarting state machines
+bool conservative = false;
+bool twoOnly = false;
 
 //servo vars
 int servoRetractPos = 2; //set servo out and in positions here.
@@ -112,6 +117,11 @@ int servoAngle =  servoRetractPos;
 int servo2RetractPos = 12;
 int servo2PushPos = 30; // was 35
 int servo2Angle = servo2RetractPos;
+
+int servo3RetractPos = 30;
+int servo3PushPos = 50;
+int servo3ClearancePos = 0;
+int servo3Angle = servo3ClearancePos;
 
 //motor control vars
 int leftMotorPower = 0; //beteween +400 and -400
@@ -248,7 +258,6 @@ void setup(){
   //initialize timers
   timeMS = millis();
   timeMS_old = timeMS;
-  timeMS_old2 = timeMS;
   time = micros() / 1000000.0;
   timeTrajStart = time;
   timeTraj = time - timeTrajStart;
@@ -263,6 +272,7 @@ void setup(){
   Serial2.print('>');
   Servo.attach(ButtonServoPWM);
   Servo2.attach(Servo2Pin);
+  Servo3.attach(Servo3Pin);
   //This pinmode makes the conveyer work, we are manually going to analogWrite()
   pinMode(MPWM1solo,OUTPUT);
   pinMode(MPWM2solo,OUTPUT);
@@ -313,6 +323,23 @@ void loop(){
   
   //main switch to decide what operating mode
   switch (inputChar) {
+    //run comp code with only two servos
+    case 't':
+      //should be identical to fresh comand section of lower except twoOnly is true
+      twoOnly = true;
+      state = 0;
+      isPushed = false;
+      isPushed2 = false;
+      isPushed3 = false;
+      timeMS_old = timeMS;
+      timeMSpusher_old = timeMS;
+      timeMSpusher_old2 = timeMS;
+      timeMSpusher_old3 = timeMS;
+      timeTrajStart = micros() / 1000000.0;
+      inputChar = 's'; // move over to main case
+      freshCommand = false;
+      break;
+      
     //main comp code
     case 's':
       //Serial.println("Running main comp code");
@@ -320,13 +347,15 @@ void loop(){
 
       //if flag var is true, reset state machine timers and state
       if (freshCommand){
+        twoOnly = false;
         state = 0;
         isPushed = false;
         isPushed2 = false;
+        isPushed3 = false;
         timeMS_old = timeMS;
-        timeMS_old2 = timeMS;
         timeMSpusher_old = timeMS;
         timeMSpusher_old2 = timeMS;
+        timeMSpusher_old3 = timeMS;
         timeTrajStart = micros() / 1000000.0;
       }
 
@@ -394,7 +423,20 @@ void loop(){
             servo2Angle = servo2PushPos;
             isPushed2 = true;
           }
-
+          //only run the third servo is two only is false
+          if (!twoOnly){
+            //Third servo
+            if (((timeMS-timeMSpusher_old3)>300) && (isPushed3)) { 
+              timeMSpusher_old3 = timeMS;
+              servo3Angle = servo3RetractPos;
+              isPushed3 = false;
+            }
+            if (((timeMS-timeMSpusher_old3)>250) && (!isPushed3)) { 
+              timeMSpusher_old3 = timeMS;
+              servo3Angle = servo3PushPos;
+              isPushed3 = true;
+            }
+          }
 
         default:
           break;
@@ -557,7 +599,10 @@ void loop(){
       digitalWrite(SecondConveyorPin, LOW);
       servoAngle = servoRetractPos;
       servo2Angle = servo2RetractPos;
+      servo3Angle = servo3ClearancePos;
       isPushed = false;
+      isPushed2 = false;
+      isPushed3 = false;
       break; 
 
     //cases for testing actuators
@@ -595,50 +640,33 @@ void loop(){
       Serial.println("Servo push button");
       servoAngle = servoPushPos;
       servo2Angle = servo2PushPos;
+      servo3Angle = servo3PushPos;
       isPushed = true;
+      isPushed2 = true;
+      isPushed3 = true;
       break; 
     case 'z': // Servo state return
       Serial.println("Servo return position");
       servoAngle = servoRetractPos;
       servo2Angle = servo2RetractPos;
+      servo3Angle = servo3RetractPos;
       isPushed = false;
+      isPushed2 = false;
+      isPushed3 = false;
       break; 
     case 'y': //PM10 Conveyor + servo
       //if flag var is true, reset state machine timers and state
       if (freshCommand){
         state = 1; //start with button pushing
         isPushed = false;
+        isPushed2 = false;
+        isPushed3 = false;
         timeMS_old = timeMS;
         timeMSpusher_old = timeMS;
-        timeMS_old2 = timeMS;
         timeMSpusher_old2 = timeMS;
+        timeMSpusher_old3 = timeMS;
       }
       switch (state){
-        case 0:
-          //start dropping conveyor
-          conveyorPower = -400;
-
-          //start spaming button
-          if (((timeMS-timeMSpusher_old)>155) && (isPushed)) { 
-            timeMSpusher_old = timeMS;
-            servoAngle = servoRetractPos;
-            servo2Angle = servo2RetractPos;
-            isPushed = false;
-          }
-          if (((timeMS-timeMSpusher_old)>125) && (!isPushed)) { 
-            timeMSpusher_old = timeMS;
-            servoAngle = servoPushPos;
-            servo2Angle = servo2PushPos;
-            isPushed = true;
-          }
-
-          //wait 2000ms
-          if ((timeMS-timeMS_old) > 2000){
-            timeMS_old = timeMS;
-            state = state + 1;
-          }
-          break;
-
         case 1:
           //start moving conveyor
           conveyorPower = 400;
@@ -665,6 +693,17 @@ void loop(){
             timeMSpusher_old2 = timeMS;
             servo2Angle = servo2PushPos;
             isPushed2 = true;
+          }
+          //Third servo
+          if (((timeMS-timeMSpusher_old3)>300) && (isPushed3)) { 
+            timeMSpusher_old3 = timeMS;
+            servo3Angle = servo3RetractPos;
+            isPushed3 = false;
+          }
+          if (((timeMS-timeMSpusher_old3)>250) && (!isPushed3)) { 
+            timeMSpusher_old3 = timeMS;
+            servo3Angle = servo3PushPos;
+            isPushed3 = true;
           }
           break;
       }
@@ -822,6 +861,10 @@ void loop(){
       digitalWrite(SecondConveyorPin, LOW);
       servoAngle = servoRetractPos;
       servo2Angle = servo2RetractPos;
+      servo3Angle = servo3ClearancePos;
+      isPushed = false;
+      isPushed2 = false;
+      isPushed3 = false;
       break;
       //Turn everything off, same as case x
   }
@@ -829,6 +872,7 @@ void loop(){
   //Set motors to numbers set during switch case 
   Servo.write(servoAngle);
   Servo2.write(servo2Angle);
+  Servo3.write(servo3Angle);
   md.setM1Speed(rightMotorPower); //motor 1 = right motor
   stopIfFault();
   md.setM2Speed(leftMotorPower); //motor 2 = left motor
