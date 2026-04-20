@@ -105,8 +105,8 @@ char inputChar = 'x';//'x'; //the stop everything state
 bool freshCommand = true; //flag var for restarting state machines
 
 //servo vars
-int servoRetractPos = 7; //set servo out and in positions here.
-int servoPushPos = 35; //40
+int servoRetractPos = 2; //set servo out and in positions here.
+int servoPushPos = 30; //40
 int servoAngle =  servoRetractPos;
 
 int servo2RetractPos = 12;
